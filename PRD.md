@@ -1,7 +1,7 @@
 # Extemp — PRD
 
 **Date:** 2026-03-02
-**Author:** Joshu Padhyay
+**Author:** Josh Upadhyay
 **Context:** Fractal Tech Week 5 (Polish Week) — finish something completely.
 
 ## One-Liner
