@@ -1,87 +1,44 @@
-import { useState, useEffect, useCallback } from "react";
-import { LandingPage } from "@/components/LandingPage";
-import { PracticePage } from "@/components/PracticePage";
-import { HistoryPage } from "@/components/HistoryPage";
-import { SettingsPage } from "@/components/SettingsPage";
+import { Mic } from "lucide-react";
+import { AsciiWaveform } from "./components/AsciiWaveform";
+import { ScrambleText } from "./components/ScrambleText";
 import { Button } from "@/components/ui/button";
-import { ROUTES } from "@/lib/routes";
-import { loadSettings, saveSettings } from "@/lib/storage";
-import type { Settings } from "@/lib/types";
 import "./index.css";
 
-function useHash(): string {
-  const [hash, setHash] = useState(window.location.hash || ROUTES.home);
-
-  useEffect(() => {
-    const onHashChange = () => setHash(window.location.hash || ROUTES.home);
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  return hash;
-}
-
-const navItems = [
-  { hash: ROUTES.home, label: "Home" },
-  { hash: ROUTES.practice, label: "Practice" },
-  { hash: ROUTES.history, label: "History" },
-  { hash: ROUTES.settings, label: "Settings" },
-];
-
 export function App() {
-  const hash = useHash();
-  const [settings, setSettings] = useState<Settings>(loadSettings);
-
-  const handleSettingsChange = useCallback((newSettings: Settings) => {
-    setSettings(newSettings);
-    saveSettings(newSettings);
-  }, []);
-
-  const navigate = useCallback((target: string) => {
-    window.location.hash = target;
-  }, []);
-
-  const renderPage = () => {
-    switch (hash) {
-      case ROUTES.practice:
-        return <PracticePage settings={settings} />;
-      case ROUTES.history:
-        return <HistoryPage />;
-      case ROUTES.settings:
-        return <SettingsPage settings={settings} onSettingsChange={handleSettingsChange} />;
-      default:
-        return <LandingPage onNavigate={navigate} />;
-    }
-  };
-
   return (
-    <div className="min-h-screen flex flex-col w-full">
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
-          <a
-            href={ROUTES.home}
-            className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
-          >
-            Extemp
-          </a>
-          <div className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <Button
-                key={item.hash}
-                variant={hash === item.hash ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => navigate(item.hash)}
-              >
-                {item.label}
-              </Button>
-            ))}
+    <div className="split-panel">
+      {/* Left panel — ASCII waveform */}
+      <div className="relative border-r border-hairline flex items-center justify-center bg-bg-subtle overflow-hidden max-lg:h-[200px] lg:h-auto">
+        <AsciiWaveform />
+      </div>
+
+      {/* Right panel — content */}
+      <div className="flex flex-col justify-center px-[var(--pad)] py-12 lg:py-0">
+        <div className="max-w-[520px]">
+          <span className="section-label">Practice / Index 01</span>
+
+          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-8">
+            <ScrambleText text="Think fast. Speak clearly." />
+          </h1>
+
+          <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
+            Get a random prompt, organize your thoughts, speak, and receive AI
+            coaching feedback with framework detection. Train yourself to sound
+            prepared when you're not.
+          </p>
+
+          <Button variant="cta" size="touch">
+            <Mic className="size-4" />
+            Start Practice
+          </Button>
+
+          <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
+            <span>FRAMEWORKS: PREP, STAR, ADD</span>
+            <span>FEEDBACK: AI COACH</span>
+            <span>STATUS: READY</span>
           </div>
         </div>
-      </nav>
-
-      <main className="flex-1">
-        {renderPage()}
-      </main>
+      </div>
     </div>
   );
 }

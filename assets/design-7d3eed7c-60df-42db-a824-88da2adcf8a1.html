@@ -1,0 +1,353 @@
+<html lang="en" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">About — Sandro Kozmanishvili</title>
+    <style vid="5">
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --secondary-color: #888888;
+            --hairline: #e5e5e5;
+            --accent: #000000;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            --pad: 40px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #cursor-dot, #cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-dot { width: 6px; height: 6px; background-color: white; }
+        #cursor-outline { width: 40px; height: 40px; border: 1px solid white; transition: width 0.2s, height 0.2s; }
+
+        
+        .corner-index {
+            position: fixed;
+            font-family: var(--font-main);
+            font-weight: 500;
+            font-size: 2.5rem;
+            line-height: 1;
+            z-index: 1000;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .tl { top: 24px; left: 24px; }
+        .tr { top: 24px; right: 24px; }
+        .bl { bottom: 24px; left: 24px; }
+        .br { bottom: 24px; right: 24px; }
+
+        
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+            height: 100%;
+        }
+
+        
+        .portrait-container {
+            position: relative;
+            border-right: 1px solid var(--hairline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+            overflow: hidden;
+        }
+
+        #ascii-portrait {
+            font-family: var(--font-mono);
+            font-size: 8px;
+            line-height: 8px;
+            white-space: pre;
+            color: var(--text-color);
+            opacity: 0.8;
+            user-select: none;
+        }
+
+        
+        .content-container {
+            padding: calc(var(--pad) * 2) var(--pad) var(--pad) var(--pad);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .content-container::-webkit-scrollbar { display: none; }
+
+        .content-inner {
+            max-width: 520px;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--secondary-color);
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            margin-bottom: 32px;
+            line-height: 1.1;
+        }
+
+        .bio-lead {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 48px;
+            color: var(--text-color);
+        }
+
+        
+        .timeline {
+            margin-top: 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 24px;
+            border-top: 1px solid var(--hairline);
+            padding-top: 16px;
+        }
+
+        .year {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+
+        .event-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .event-desc {
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            line-height: 1.5;
+        }
+
+        .telemetry-footer {
+            margin-top: 80px;
+            padding-top: 24px;
+            border-top: 1px solid var(--hairline);
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--secondary-color);
+        }
+
+        .scramble-text:hover {
+            color: var(--secondary-color);
+        }
+
+    </style>
+</head>
+<body vid="6">
+
+    <div id="cursor-dot" vid="7"></div>
+    <div id="cursor-outline" vid="8"></div>
+
+    <a href="#" class="corner-index tl" vid="9">S</a>
+    <div class="corner-index tr" vid="10">A</div>
+    <div class="corner-index bl" vid="11">25</div>
+    <div class="corner-index br" vid="12">K</div>
+
+    <main vid="13">
+        <div class="portrait-container" vid="14">
+            <div id="ascii-portrait" vid="15"></div>
+        </div>
+
+        <div class="content-container" vid="16">
+            <div class="content-inner" vid="17">
+                <span class="section-label" vid="18">Profile / Index 01</span>
+                <h1 class="scramble-trigger" vid="19">Bridging logical systems &amp; visual aesthetics.</h1>
+                
+                <p class="bio-lead" vid="20">
+                    I am a designer and developer exploring how algorithmic structures can inform human-centric interfaces. My work lives at the intersection of generative art, system architecture, and functional minimalism.
+                </p>
+
+                <span class="section-label" vid="21">Chronology</span>
+                <div class="timeline" vid="22">
+                    <div class="timeline-item" vid="23">
+                        <div class="year" vid="24">2024—25</div>
+                        <div class="event" vid="25">
+                            <div class="event-title" vid="26">Independent Practice</div>
+                            <div class="event-desc" vid="27">Focusing on high-fidelity prototypes and generative design systems for international clients.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item" vid="28">
+                        <div class="year" vid="29">2022—23</div>
+                        <div class="event" vid="30">
+                            <div class="event-title" vid="31">Lead Product Designer</div>
+                            <div class="event-desc" vid="32">Developed scalable design languages for data-intensive fintech platforms in Tbilisi.</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item" vid="33">
+                        <div class="year" vid="34">2020—21</div>
+                        <div class="event" vid="35">
+                            <div class="event-title" vid="36">Visual Researcher</div>
+                            <div class="event-desc" vid="37">Experimentation with ASCII-based rendering and real-time noise displacement interfaces.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="telemetry-footer" vid="38">
+                    <div vid="39">RENDER: <span id="render-ms" vid="40">1.2</span>ms</div>
+                    <div vid="41">LOC: 41.7151° N, 44.8271° E</div>
+                    <div vid="42">STATUS: ACTIVE</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script vid="43">
+        
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorOutline = document.getElementById('cursor-outline');
+        let mouseX = 0, mouseY = 0;
+        let outlineX = 0, outlineY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        });
+
+        function animateCursor() {
+            outlineX += (mouseX - outlineX) * 0.15;
+            outlineY += (mouseY - outlineY) * 0.15;
+            cursorOutline.style.left = outlineX + 'px';
+            cursorOutline.style.top = outlineY + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        
+        const portrait = document.getElementById('ascii-portrait');
+        const chars = " .:-=+*#%@";
+        const rows = 60;
+        const cols = 50;
+        let time = 0;
+
+        function updatePortrait() {
+            let output = "";
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    
+                    const dx = (x - cols/2) / (cols/2);
+                    const dy = (y - rows/2) / (rows/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy * 1.2);
+                    
+                    const noise = Math.sin(x * 0.1 + time) * Math.cos(y * 0.1 + time);
+                    let val = (1 - dist) + (noise * 0.2);
+                    
+                    if (val < 0.3) {
+                        output += " ";
+                    } else {
+                        const charIdx = Math.floor(Math.min(val, 0.99) * chars.length);
+                        output += chars[charIdx];
+                    }
+                }
+                output += "\n";
+            }
+            portrait.innerText = output;
+            time += 0.05;
+            document.getElementById('render-ms').textContent = (Math.random() * 2 + 0.5).toFixed(1);
+            requestAnimationFrame(updatePortrait);
+        }
+        updatePortrait();
+
+        
+        class TextScramble {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.originalText = el.innerText;
+                this.update = this.update.bind(this);
+            }
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.chars[Math.floor(Math.random() * this.chars.length)];
+                            this.queue[i].char = char;
+                        }
+                        output += `<span style="opacity:0.5">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete !== this.queue.length) {
+                    this.frameRequest = requestAnimationFrame(this.update);
+                    this.frame++;
+                }
+            }
+        }
+
+        const scramble = new TextScramble(document.querySelector('.scramble-trigger'));
+        document.querySelector('.scramble-trigger').addEventListener('mouseenter', () => {
+            scramble.setText(scramble.originalText);
+        });
+    </script>
+
+</body></html>
