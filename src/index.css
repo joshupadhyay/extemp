@@ -149,6 +149,66 @@
   }
 }
 
+/* Blinking cursor for transcript */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: var(--foreground);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Audio level bars animation */
+@keyframes level-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.level-bar {
+  width: 3px;
+  height: 24px;
+  background-color: var(--muted-foreground);
+  transform-origin: bottom;
+}
+
+.level-bar:nth-child(1) { animation: level-bar 0.8s ease-in-out infinite; }
+.level-bar:nth-child(2) { animation: level-bar 0.8s ease-in-out 0.15s infinite; }
+.level-bar:nth-child(3) { animation: level-bar 0.8s ease-in-out 0.3s infinite; }
+.level-bar:nth-child(4) { animation: level-bar 0.8s ease-in-out 0.45s infinite; }
+
+/* Waveform gradient fades */
+.waveform-container {
+  position: relative;
+}
+
+.waveform-container::before,
+.waveform-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.waveform-container::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--background), transparent);
+}
+
+.waveform-container::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--background), transparent);
+}
+
 /* Scramble text hover effect */
 .scramble-text {
   transition: color 200ms ease-out;

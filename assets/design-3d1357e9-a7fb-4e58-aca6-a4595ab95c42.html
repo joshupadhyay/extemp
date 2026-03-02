@@ -1,0 +1,256 @@
+<html lang="en" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">Speech Practice - Recording</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17" vid="5"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet" vid="6">
+    <style vid="7">
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FAFAFA;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .blink {
+            animation: blinker 1.5s linear infinite;
+        }
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
+        
+        #waveform {
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.1;
+            white-space: pre;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #171717;
+            font-size: 10px; 
+            width: 100%;
+            height: 100%;
+            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+        }
+        
+        .cursor-blink {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: #DC2626;
+            vertical-align: text-bottom;
+            animation: blink-caret .75s step-end infinite;
+        }
+
+        @keyframes blink-caret {
+            from, to { opacity: 0 }
+            50% { opacity: 1 }
+        }
+
+        .btn-hover-effect:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center bg-gray-100" vid="8">
+
+    
+    <div class="w-full h-full max-w-md bg-white sm:rounded-[40px] shadow-2xl overflow-hidden relative flex flex-col" vid="9">
+        
+        
+        <div class="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-100 hidden sm:block" vid="10"></div>
+
+        
+        <div class="px-6 py-6 flex justify-between items-start z-10" vid="11">
+            <div class="flex flex-col gap-1" vid="12">
+                <div class="flex items-center gap-2 text-red-600" vid="13">
+                    <div class="w-2 h-2 rounded-full bg-red-600 blink" vid="14"></div>
+                    <span class="text-xs font-mono font-medium tracking-widest" vid="15">REC</span>
+                </div>
+            </div>
+            <div class="text-[10px] font-mono text-gray-400 tracking-wider" vid="16">
+                PRACTICE / INDEX 01
+            </div>
+        </div>
+
+        
+        <div class="flex-1 flex flex-col relative" vid="17">
+            
+            
+            <div class="h-[35%] w-full relative flex flex-col items-center justify-center py-4" vid="18">
+                
+                <div id="waveform" class="text-xs leading-none select-none opacity-80" vid="19">
+                    
+                </div>
+                
+                
+                <div class="absolute inset-0 bg-gradient-to-b from-white via-transparent to-transparent pointer-events-none h-8" vid="20"></div>
+                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none h-8" vid="21"></div>
+            </div>
+
+            
+            <div class="flex-1 px-8 flex flex-col pt-2 pb-8" vid="22">
+                
+                
+                <div class="mb-8" vid="23">
+                    <h1 class="text-2xl font-semibold text-gray-900 tracking-tight leading-tight mb-2" vid="24">
+                        Think fast. Speak clearly.
+                    </h1>
+                    <p class="text-sm text-gray-400" vid="25">
+                        Topic: Leadership &amp; Crisis Management
+                    </p>
+                </div>
+
+                
+                <div class="flex-1 min-h-[120px]" vid="26">
+                    <p class="text-lg text-gray-600 leading-relaxed font-light" id="transcription" vid="27">
+                        I believe the most effective way to handle a crisis is to first acknowledge the reality of the situation. Transparency builds trust, and without trust, you can't lead effectively. So, my first step would be to gather the team and...
+                        <span class="cursor-blink" vid="28"></span>
+                    </p>
+                </div>
+
+                
+                <div class="mt-auto pt-6" vid="29">
+                    <div class="flex items-center justify-between mb-8" vid="30">
+                        <div class="font-mono text-4xl text-gray-900 tracking-tighter" id="timer" vid="31">
+                            00:14
+                        </div>
+                        <div class="flex gap-2" vid="32">
+                            
+                            <div class="flex items-end gap-[2px] h-6" vid="33">
+                                <div class="w-1 bg-gray-200 rounded-t-sm h-2 animate-[pulse_0.5s_ease-in-out_infinite]" vid="34"></div>
+                                <div class="w-1 bg-gray-300 rounded-t-sm h-4 animate-[pulse_0.6s_ease-in-out_infinite]" vid="35"></div>
+                                <div class="w-1 bg-red-400 rounded-t-sm h-full animate-[pulse_0.4s_ease-in-out_infinite]" vid="36"></div>
+                                <div class="w-1 bg-gray-300 rounded-t-sm h-3 animate-[pulse_0.7s_ease-in-out_infinite]" vid="37"></div>
+                                <div class="w-1 bg-gray-200 rounded-t-sm h-1 animate-[pulse_0.5s_ease-in-out_infinite]" vid="38"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-[#E8302A] hover:bg-[#D4251F] text-white font-medium py-4 rounded-lg shadow-sm transition-all duration-200 btn-hover-effect flex items-center justify-center gap-2 group" vid="39">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="opacity-90 group-hover:opacity-100" vid="40">
+                            <rect x="6" y="6" width="12" height="12" rx="2" vid="41"></rect>
+                        </svg>
+                        Stop Recording
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50" vid="42">
+            <div class="grid grid-cols-2 gap-y-2 text-[9px] font-mono text-gray-400 uppercase tracking-wider" vid="43">
+                <div vid="44">Frameworks: <span class="text-gray-600 animate-pulse" vid="45">Detecting...</span></div>
+                <div class="text-right" vid="46">Feedback: AI Coach</div>
+                <div vid="47">Status: <span class="text-red-500" vid="48">Recording</span></div>
+                <div class="text-right" vid="49">Mic: Built-in</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script vid="50">
+        
+        const waveform = document.getElementById('waveform');
+        const rows = 18;
+        const cols = 45;
+        const chars = ['.', ':', ';', 'l', 'i', 'I', 'H', 'M', '#']; 
+
+        function generateWaveform() {
+            let art = '';
+            const time = Date.now() / 300; 
+
+            for (let r = 0; r < rows; r++) {
+                let rowStr = '';
+                for (let c = 0; c < cols; c++) {
+                    
+                    
+                    
+                    
+                    const x = c / 5;
+                    const wave1 = Math.sin(x + time) * 4;
+                    const wave2 = Math.cos(x * 0.5 - time * 1.5) * 3;
+                    const wave3 = Math.sin(x * 2 + time * 2) * 1;
+                    
+                    const height = (rows / 2) + wave1 + wave2 + wave3;
+                    
+                    
+                    const dist = Math.abs(r - height);
+                    
+                    
+                    let charIndex = 0;
+                    if (dist < 1.5) charIndex = 8;
+                    else if (dist < 2.5) charIndex = 6;
+                    else if (dist < 3.5) charIndex = 4;
+                    else if (dist < 4.5) charIndex = 2;
+                    else if (dist < 6.0) charIndex = 1;
+                    else charIndex = 0;
+
+                    
+                    if (Math.random() > 0.95) {
+                         charIndex = Math.max(0, charIndex - 2);
+                    }
+
+                    rowStr += chars[charIndex];
+                }
+                art += rowStr + '\n';
+            }
+            waveform.textContent = art;
+        }
+
+        
+        let seconds = 14;
+        const timerElement = document.getElementById('timer');
+        
+        function updateTimer() {
+            seconds++;
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            timerElement.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        
+        const transcriptionElement = document.getElementById('transcription');
+        const phrases = [
+            " establish clear boundaries.", 
+            " It's not about", 
+            " avoiding the problem,", 
+            " but facing it head on."
+        ];
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let currentText = transcriptionElement.innerText.trim(); 
+        
+        
+        const cursorHtml = '<span class="cursor-blink"></span>';
+        
+        transcriptionElement.innerHTML = currentText.replace(/<[^>]*>/g, '') + cursorHtml;
+
+        function typeWriter() {
+            if (phraseIndex < phrases.length) {
+                const phrase = phrases[phraseIndex];
+                if (charIndex < phrase.length) {
+                    const currentContent = transcriptionElement.innerHTML.replace(cursorHtml, '');
+                    transcriptionElement.innerHTML = currentContent + phrase.charAt(charIndex) + cursorHtml;
+                    charIndex++;
+                    setTimeout(typeWriter, 50 + Math.random() * 100); 
+                } else {
+                    phraseIndex++;
+                    charIndex = 0;
+                    setTimeout(typeWriter, 1000); 
+                }
+            }
+        }
+
+        
+        setInterval(generateWaveform, 60); 
+        setInterval(updateTimer, 1000);
+        setTimeout(typeWriter, 2000); 
+
+    </script>
+
+</body></html>
