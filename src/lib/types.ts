@@ -35,6 +35,7 @@ export interface SpeechSession {
   prompt: string;
   promptCategory: string;
   feedbackData: FeedbackData;
+  transcription?: TranscriptionResult;
 }
 
 export interface Settings {
@@ -52,5 +53,35 @@ export type PracticePhase =
 
 export interface Prompt {
   text: string;
-  category: "opinion" | "policy" | "hypothetical" | "current-events";
+  category: "opinion" | "policy" | "hypothetical" | "current-events" | "philosophical" | "professional";
+  suggestedFramework?: string;
+  difficulty?: "easy" | "medium" | "hard";
+}
+
+// ---------------------------------------------------------------------------
+// Whisper transcription response types
+// ---------------------------------------------------------------------------
+
+export interface WordTimestamp {
+  word: string;
+  start: number;
+  end: number;
+  probability: number;
+}
+
+export interface TranscriptionSegment {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+  avg_logprob: number;
+}
+
+export interface TranscriptionResult {
+  transcript: string;
+  duration: number;
+  audio_id: string;
+  words: WordTimestamp[];
+  segments: TranscriptionSegment[];
+  speech_rate_wpm: number;
 }

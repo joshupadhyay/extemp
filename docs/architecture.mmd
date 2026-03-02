@@ -1,0 +1,33 @@
+graph TD
+  subgraph Browser["Browser - React SPA"]
+    MR["MediaRecorder API"] --> AB["Audio Blob\nWebM/Opus"]
+    PS["ProcessingScreen"] --> T1["Phase 1: Transcribing"]
+    PS --> T2["Phase 2: Analyzing"]
+    RP["ResultsPanel"] --> LS[("localStorage\nsessions + settings")]
+  end
+
+  subgraph BunServer["Bun.serve Proxy"]
+    API1["POST /api/transcribe"]
+    API2["POST /api/evaluate\n(not yet wired)"]
+  end
+
+  subgraph Modal["Modal - T4 GPU"]
+    WH["faster-whisper\nlarge-v3-turbo"]
+    AV[("extemp-audio\nVolume")]
+    MV[("whisper-models\nVolume")]
+    MV --> WH
+    WH --> AV
+  end
+
+  subgraph OpenRouter["OpenRouter LLM"]
+    GM["Gemini 2.5 Flash Lite\nor DeepSeek V3.2"]
+  end
+
+  AB -->|"POST /api/transcribe\nFormData"| API1
+  API1 -->|"Forward FormData"| WH
+  WH -->|"transcript + words[]\nsegments[] + WPM\naudio_id"| API1
+  API1 -->|"transcript + prompt"| API2
+  API2 -->|"prompt + transcript"| GM
+  GM -->|"scores + coaching\nframework + fillers"| API2
+  API2 -->|"combined result"| PS
+  PS --> RP
