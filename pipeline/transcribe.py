@@ -50,6 +50,114 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 ALLOWED_EXTENSIONS = {".webm", ".mp4", ".wav", ".m4a", ".ogg", ".mp3"}
 
 # ---------------------------------------------------------------------------
+# Filler word detection
+# ---------------------------------------------------------------------------
+
+# Single-word fillers (matched case-insensitively against individual words)
+SINGLE_WORD_FILLERS = {"um", "uh", "like", "so", "basically", "right"}
+
+# Multi-word fillers (matched as consecutive word pairs, case-insensitive)
+MULTI_WORD_FILLERS = {"you know", "kind of", "sort of", "i mean"}
+
+
+def _strip_word(w: str) -> str:
+    """Lowercase and strip punctuation from a word for filler matching."""
+    import re
+    return re.sub(r"[^\w']", "", w.lower())
+
+
+def detect_filler_words(words_list: list[dict]) -> dict:
+    """Scan word timestamps for filler words and return counts + positions.
+
+    Returns:
+        {
+            "count": int,
+            "details": {filler: count, ...},
+            "positions": [{"word": str, "start": float, "end": float}, ...]
+        }
+    """
+    details: dict[str, int] = {}
+    positions: list[dict] = []
+    consumed: set[int] = set()  # indices consumed by multi-word fillers
+
+    # Pass 1: detect multi-word fillers (consecutive pairs)
+    for i in range(len(words_list) - 1):
+        pair = _strip_word(words_list[i]["word"]) + " " + _strip_word(words_list[i + 1]["word"])
+        if pair in MULTI_WORD_FILLERS:
+            details[pair] = details.get(pair, 0) + 1
+            positions.append({
+                "word": pair,
+                "start": words_list[i]["start"],
+                "end": words_list[i + 1]["end"],
+            })
+            consumed.add(i)
+            consumed.add(i + 1)
+
+    # Pass 2: detect single-word fillers (skip words already consumed by multi-word)
+    for i, w in enumerate(words_list):
+        if i in consumed:
+            continue
+        cleaned = _strip_word(w["word"])
+        if cleaned in SINGLE_WORD_FILLERS:
+            details[cleaned] = details.get(cleaned, 0) + 1
+            positions.append({
+                "word": cleaned,
+                "start": w["start"],
+                "end": w["end"],
+            })
+
+    # Sort positions by start time
+    positions.sort(key=lambda p: p["start"])
+
+    return {
+        "count": sum(details.values()),
+        "details": details,
+        "positions": positions,
+    }
+
+
+def generate_highlighted_transcript(words_list: list[dict], filler_result: dict) -> str:
+    """Build a transcript string with filler words wrapped in <mark> tags.
+
+    Uses the positions from filler detection to determine which word indices
+    to wrap, then reconstructs the transcript preserving original word text.
+    """
+    # Build a set of word-list indices that are filler words
+    filler_indices: dict[int, str] = {}  # index -> filler phrase
+
+    for pos in filler_result["positions"]:
+        # Find the matching word(s) by start/end time
+        for i, w in enumerate(words_list):
+            if abs(w["start"] - pos["start"]) < 0.001:
+                if " " in pos["word"]:
+                    # Multi-word filler: mark both this index and next
+                    filler_indices[i] = "multi_start"
+                    if i + 1 < len(words_list):
+                        filler_indices[i + 1] = "multi_end"
+                else:
+                    filler_indices[i] = "single"
+                break
+
+    parts: list[str] = []
+    i = 0
+    while i < len(words_list):
+        word_text = words_list[i]["word"]
+        tag = filler_indices.get(i)
+
+        if tag == "multi_start" and i + 1 < len(words_list):
+            next_text = words_list[i + 1]["word"]
+            parts.append(f"<mark>{word_text} {next_text}</mark>")
+            i += 2
+        elif tag == "single":
+            parts.append(f"<mark>{word_text}</mark>")
+            i += 1
+        else:
+            parts.append(word_text)
+            i += 1
+
+    return " ".join(parts)
+
+# ---------------------------------------------------------------------------
 # Transcription endpoint
 # ---------------------------------------------------------------------------
 
@@ -166,6 +274,10 @@ class Whisper:
         word_count = len(words_list)
         speech_rate_wpm = round((word_count / speech_duration) * 60, 1) if speech_duration > 0 else 0
 
+        # Detect filler words from word-level timestamps (deterministic, no LLM)
+        filler_words = detect_filler_words(words_list)
+        highlighted_transcript = generate_highlighted_transcript(words_list, filler_words)
+
         return JSONResponse(
             content={
                 "transcript": transcript,
@@ -174,6 +286,8 @@ class Whisper:
                 "words": words_list,
                 "segments": segments_list,
                 "speech_rate_wpm": speech_rate_wpm,
+                "filler_words": filler_words,
+                "highlighted_transcript": highlighted_transcript,
             },
         )
 

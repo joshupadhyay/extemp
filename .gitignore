@@ -36,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Playwright
 test-results/
 playwright-report/
+
+# Saved audio recordings (dev testing)
+recordings/

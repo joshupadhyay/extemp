@@ -6,27 +6,21 @@ export interface FeedbackScores {
   language: number;
 }
 
-export interface FillerWords {
-  count: number;
-  details: Record<string, number>;
-}
-
 export interface Feedback {
   overall_score: number;
   coach_summary: string;
   scores: FeedbackScores;
-  filler_words: FillerWords;
   framework_detected: string | null;
   framework_suggested: string | null;
   time_usage: "underfilled" | "good" | "overfilled";
   strengths: string[];
   improvement: string;
-  highlighted_transcript: string;
 }
 
 export interface FeedbackData {
   transcript: string;
   feedback: Feedback;
+  transcription?: TranscriptionResult;
 }
 
 export interface SpeechSession {
@@ -77,6 +71,18 @@ export interface TranscriptionSegment {
   avg_logprob: number;
 }
 
+export interface FillerWordPosition {
+  word: string;
+  start: number;
+  end: number;
+}
+
+export interface FillerWordsResult {
+  count: number;
+  details: Record<string, number>;
+  positions: FillerWordPosition[];
+}
+
 export interface TranscriptionResult {
   transcript: string;
   duration: number;
@@ -84,4 +90,6 @@ export interface TranscriptionResult {
   words: WordTimestamp[];
   segments: TranscriptionSegment[];
   speech_rate_wpm: number;
+  filler_words: FillerWordsResult;
+  highlighted_transcript: string;
 }
