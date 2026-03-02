@@ -1,10 +1,74 @@
-import { Mic } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Mic, ArrowLeft } from "lucide-react";
 import { AsciiWaveform } from "./components/AsciiWaveform";
 import { ScrambleText } from "./components/ScrambleText";
 import { Button } from "@/components/ui/button";
+import { PracticePage } from "@/components/PracticePage";
+import { HistoryPage } from "@/components/HistoryPage";
+import { SettingsPage } from "@/components/SettingsPage";
+import { ROUTES } from "@/lib/routes";
+import type { Settings } from "@/lib/types";
 import "./index.css";
 
 export function App() {
+  const [route, setRoute] = useState(window.location.hash || ROUTES.home);
+  const [settings, setSettings] = useState<Settings>({
+    prepTime: 60,
+    speakingTime: 120,
+  });
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setRoute(window.location.hash || ROUTES.home);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const navigate = useCallback((hash: string) => {
+    window.location.hash = hash;
+  }, []);
+
+  // Non-home routes get a minimal nav header
+  if (route !== ROUTES.home) {
+    const pageTitle =
+      route === ROUTES.practice
+        ? "PRACTICE"
+        : route === ROUTES.history
+          ? "HISTORY"
+          : route === ROUTES.settings
+            ? "SETTINGS"
+            : "";
+
+    return (
+      <div className="min-h-screen flex flex-col">
+        <nav className="flex items-center gap-3 px-[var(--pad)] py-3 border-b border-hairline">
+          <button
+            onClick={() => navigate(ROUTES.home)}
+            className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back
+          </button>
+          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
+            / {pageTitle}
+          </span>
+        </nav>
+        <div className="flex-1">
+          {route === ROUTES.practice && <PracticePage settings={settings} />}
+          {route === ROUTES.history && <HistoryPage />}
+          {route === ROUTES.settings && (
+            <SettingsPage
+              settings={settings}
+              onSettingsChange={setSettings}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Home / Landing page — inline (not the LandingPage component)
   return (
     <div className="split-panel">
       {/* Left panel — ASCII waveform */}
@@ -27,7 +91,11 @@ export function App() {
             prepared when you're not.
           </p>
 
-          <Button variant="cta" size="touch">
+          <Button
+            variant="cta"
+            size="touch"
+            onClick={() => navigate(ROUTES.practice)}
+          >
             <Mic className="size-4" />
             Start Practice
           </Button>
