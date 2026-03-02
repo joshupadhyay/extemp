@@ -4,35 +4,16 @@ import { PracticePage } from "@/components/PracticePage";
 import { HistoryPage } from "@/components/HistoryPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/routes";
+import { loadSettings, saveSettings } from "@/lib/storage";
 import type { Settings } from "@/lib/types";
 import "./index.css";
 
-const DEFAULT_SETTINGS: Settings = {
-  prepTime: 60,
-  speakingTime: 120,
-};
-
-function loadSettings(): Settings {
-  try {
-    const raw = localStorage.getItem("extemp_settings");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        prepTime: parsed.prepTime === 120 ? 120 : 60,
-        speakingTime: parsed.speakingTime === 60 ? 60 : 120,
-      };
-    }
-  } catch {
-    // ignore
-  }
-  return DEFAULT_SETTINGS;
-}
-
 function useHash(): string {
-  const [hash, setHash] = useState(window.location.hash || "#/");
+  const [hash, setHash] = useState(window.location.hash || ROUTES.home);
 
   useEffect(() => {
-    const onHashChange = () => setHash(window.location.hash || "#/");
+    const onHashChange = () => setHash(window.location.hash || ROUTES.home);
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -41,10 +22,10 @@ function useHash(): string {
 }
 
 const navItems = [
-  { hash: "#/", label: "Home" },
-  { hash: "#/practice", label: "Practice" },
-  { hash: "#/history", label: "History" },
-  { hash: "#/settings", label: "Settings" },
+  { hash: ROUTES.home, label: "Home" },
+  { hash: ROUTES.practice, label: "Practice" },
+  { hash: ROUTES.history, label: "History" },
+  { hash: ROUTES.settings, label: "Settings" },
 ];
 
 export function App() {
@@ -53,7 +34,7 @@ export function App() {
 
   const handleSettingsChange = useCallback((newSettings: Settings) => {
     setSettings(newSettings);
-    localStorage.setItem("extemp_settings", JSON.stringify(newSettings));
+    saveSettings(newSettings);
   }, []);
 
   const navigate = useCallback((target: string) => {
@@ -62,11 +43,11 @@ export function App() {
 
   const renderPage = () => {
     switch (hash) {
-      case "#/practice":
+      case ROUTES.practice:
         return <PracticePage settings={settings} />;
-      case "#/history":
+      case ROUTES.history:
         return <HistoryPage />;
-      case "#/settings":
+      case ROUTES.settings:
         return <SettingsPage settings={settings} onSettingsChange={handleSettingsChange} />;
       default:
         return <LandingPage onNavigate={navigate} />;
@@ -75,11 +56,10 @@ export function App() {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
-      {/* Navigation */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
           <a
-            href="#/"
+            href={ROUTES.home}
             className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
           >
             Extemp
@@ -99,7 +79,6 @@ export function App() {
         </div>
       </nav>
 
-      {/* Page content */}
       <main className="flex-1">
         {renderPage()}
       </main>

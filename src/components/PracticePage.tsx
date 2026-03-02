@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Timer } from "@/components/Timer";
 import { PromptCard } from "@/components/PromptCard";
@@ -6,22 +6,12 @@ import { ResultsPanel } from "@/components/ResultsPanel";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { getRandomPrompt } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
+import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, Settings, SpeechSession } from "@/lib/types";
 import { Mic, Loader2 } from "lucide-react";
 
 interface PracticePageProps {
   settings: Settings;
-}
-
-function saveSession(session: SpeechSession) {
-  try {
-    const raw = localStorage.getItem("extemp_sessions");
-    const sessions: SpeechSession[] = raw ? JSON.parse(raw) : [];
-    sessions.unshift(session);
-    localStorage.setItem("extemp_sessions", JSON.stringify(sessions));
-  } catch {
-    // Silently fail if localStorage is full
-  }
 }
 
 export function PracticePage({ settings }: PracticePageProps) {
@@ -30,6 +20,12 @@ export function PracticePage({ settings }: PracticePageProps) {
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
   const [processingStatus, setProcessingStatus] = useState("");
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder();
+
+  // Refs for stable callback access
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const currentPromptRef = useRef(currentPrompt);
+  currentPromptRef.current = currentPrompt;
 
   const handleStart = useCallback(() => {
     const prompt = getRandomPrompt();
@@ -47,12 +43,14 @@ export function PracticePage({ settings }: PracticePageProps) {
       await startRecording();
       setPhase("speaking");
     } catch {
-      // Error is handled by the hook, stay in prep
       setPhase("prompt");
     }
   }, [startRecording]);
 
   const handleSpeakingComplete = useCallback(async () => {
+    // Guard against double-fire (timer + button)
+    if (phaseRef.current !== "speaking") return;
+
     setPhase("processing");
     setProcessingStatus("Transcribing...");
 
@@ -72,19 +70,20 @@ export function PracticePage({ settings }: PracticePageProps) {
     setFeedbackData(data);
 
     // Save session
-    if (currentPrompt) {
+    const prompt = currentPromptRef.current;
+    if (prompt) {
       const session: SpeechSession = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
-        prompt: currentPrompt.text,
-        promptCategory: currentPrompt.category,
+        prompt: prompt.text,
+        promptCategory: prompt.category,
         feedbackData: data,
       };
       saveSession(session);
     }
 
     setPhase("results");
-  }, [stopRecording, currentPrompt]);
+  }, [stopRecording]);
 
   const handleReset = useCallback(() => {
     setPhase("idle");

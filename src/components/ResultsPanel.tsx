@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProgressRing } from "@/components/ProgressRing";
 import type { FeedbackData } from "@/lib/types";
 
 interface ResultsPanelProps {
@@ -6,41 +7,18 @@ interface ResultsPanelProps {
 }
 
 function ScoreRing({ score, label }: { score: number; label: string }) {
-  const size = 56;
-  const strokeWidth = 4;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const progress = score / 10;
-  const offset = circumference * (1 - progress);
+  const color =
+    score >= 7
+      ? "hsl(142 76% 36%)"
+      : score >= 4
+        ? "hsl(38 92% 50%)"
+        : "hsl(0 84% 60%)";
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="hsl(var(--muted))"
-            strokeWidth={strokeWidth}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={score >= 7 ? "hsl(142 76% 36%)" : score >= 4 ? "hsl(38 92% 50%)" : "hsl(0 84% 60%)"}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold">{score}</span>
-        </div>
-      </div>
+      <ProgressRing size={56} strokeWidth={4} progress={score / 10} strokeColor={color}>
+        <span className="text-sm font-bold">{score}</span>
+      </ProgressRing>
       <span className="text-xs text-muted-foreground text-center">{label}</span>
     </div>
   );
@@ -58,6 +36,32 @@ function timeUsageLabel(usage: "underfilled" | "good" | "overfilled"): string {
   if (usage === "underfilled") return "Could have used more time";
   if (usage === "overfilled") return "Went a bit long";
   return "Good time usage";
+}
+
+function sanitizeHighlightedTranscript(html: string): string {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  const marks = div.querySelectorAll("mark");
+  // Rebuild: only allow <mark> tags, escape everything else
+  const walker = document.createTreeWalker(div, NodeFilter.SHOW_ALL);
+  let safe = "";
+  let node: Node | null = walker.currentNode;
+  while (node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      safe += node.textContent ?? "";
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      if (el.tagName === "MARK") {
+        safe += "<mark>";
+      }
+    }
+    node = walker.nextNode();
+  }
+  // Close any opened marks
+  const openCount = (safe.match(/<mark>/g) || []).length;
+  const closeCount = (safe.match(/<\/mark>/g) || []).length;
+  // Re-approach: simpler — strip all tags except <mark> and </mark>
+  return html.replace(/<\/?(?!mark\b)[^>]*>/gi, "");
 }
 
 export function ResultsPanel({ data }: ResultsPanelProps) {
@@ -184,7 +188,9 @@ export function ResultsPanel({ data }: ResultsPanelProps) {
         <CardContent>
           <p
             className="text-muted-foreground leading-relaxed text-sm [&_mark]:bg-amber-500/30 [&_mark]:text-amber-200 [&_mark]:rounded [&_mark]:px-0.5"
-            dangerouslySetInnerHTML={{ __html: feedback.highlighted_transcript }}
+            dangerouslySetInnerHTML={{
+              __html: sanitizeHighlightedTranscript(feedback.highlighted_transcript),
+            }}
           />
         </CardContent>
       </Card>

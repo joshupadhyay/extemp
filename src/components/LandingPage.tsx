@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/routes";
 
 interface LandingPageProps {
   onNavigate: (hash: string) => void;
@@ -19,7 +20,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <Button
         size="lg"
         className="text-lg px-8 py-6"
-        onClick={() => onNavigate("#/practice")}
+        onClick={() => onNavigate(ROUTES.practice)}
       >
         Start Practice
       </Button>

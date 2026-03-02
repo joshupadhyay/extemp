@@ -1,18 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ResultsPanel } from "@/components/ResultsPanel";
+import { loadSessions } from "@/lib/storage";
 import type { SpeechSession } from "@/lib/types";
 import { ChevronLeft } from "lucide-react";
-
-function loadSessions(): SpeechSession[] {
-  try {
-    const raw = localStorage.getItem("extemp_sessions");
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -26,12 +18,8 @@ function formatDate(iso: string): string {
 }
 
 export function HistoryPage() {
-  const [sessions, setSessions] = useState<SpeechSession[]>([]);
+  const [sessions, setSessions] = useState<SpeechSession[]>(loadSessions);
   const [selected, setSelected] = useState<SpeechSession | null>(null);
-
-  useEffect(() => {
-    setSessions(loadSessions());
-  }, []);
 
   if (selected) {
     return (
@@ -86,9 +74,7 @@ export function HistoryPage() {
                     {formatDate(session.date)}
                   </p>
                   <p className="font-medium truncate">
-                    {session.prompt.length > 60
-                      ? session.prompt.slice(0, 60) + "..."
-                      : session.prompt}
+                    {session.prompt}
                   </p>
                   {session.feedbackData.feedback.framework_detected && (
                     <span className="text-xs text-muted-foreground">

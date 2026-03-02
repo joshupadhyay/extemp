@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 interface UseAudioRecorderReturn {
   isRecording: boolean;
@@ -21,6 +21,12 @@ function getPreferredMimeType(): string {
   return "audio/webm";
 }
 
+function releaseStream(stream: MediaStream | null) {
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+}
+
 export function useAudioRecorder(): UseAudioRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +34,25 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Cleanup on unmount: release mic if still recording
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      releaseStream(streamRef.current);
+      streamRef.current = null;
+      mediaRecorderRef.current = null;
+    };
+  }, []);
+
   const startRecording = useCallback(async () => {
     setError(null);
     chunksRef.current = [];
 
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
       const mimeType = getPreferredMimeType();
@@ -49,6 +68,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       recorder.start();
       setIsRecording(true);
     } catch (err) {
+      // Release stream if getUserMedia succeeded but MediaRecorder failed
+      releaseStream(stream);
+      streamRef.current = null;
+
       if (err instanceof DOMException) {
         if (err.name === "NotAllowedError") {
           setError("Microphone access was denied. Please allow microphone access and try again.");
@@ -77,11 +100,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         chunksRef.current = [];
 
-        // Stop all tracks to release the microphone
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-        }
+        releaseStream(streamRef.current);
+        streamRef.current = null;
 
         setIsRecording(false);
         mediaRecorderRef.current = null;
