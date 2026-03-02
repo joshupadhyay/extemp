@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { FeedbackData } from "@/lib/types";
+import type { FeedbackData, FillerWordsResult } from "@/lib/types";
 
 interface ResultsPanelProps {
   data: FeedbackData;
@@ -73,9 +73,11 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 }
 
 export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProps) {
-  const { feedback, transcript } = data;
+  const { feedback, transcript, transcription } = data;
   const score = Math.round(feedback.overall_score * 10);
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
+  const fillerWords: FillerWordsResult | null = transcription?.filler_words ?? null;
+  const highlightedTranscript: string | null = transcription?.highlighted_transcript ?? null;
   const dateStr = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -132,7 +134,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
             </div>
             <div className="text-right">
               <span className="block text-neutral-300 mb-1">Fillers</span>
-              <span className="text-neutral-900">{feedback.filler_words.count}</span>
+              <span className="text-neutral-900">{fillerWords?.count ?? "--"}</span>
             </div>
           </div>
         </div>
@@ -154,7 +156,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
             </div>
             <div className="h-8 w-px bg-neutral-300" />
             <div className="flex flex-col items-center">
-              <span className="text-neutral-900 font-bold">{feedback.filler_words.count}</span>
+              <span className="text-neutral-900 font-bold">{fillerWords?.count ?? "--"}</span>
               <span>Fillers</span>
             </div>
           </div>
@@ -303,19 +305,19 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
           </div>
 
           {/* Filler Words / Confidence Killers */}
-          {feedback.filler_words.count > 0 && (
+          {fillerWords && fillerWords.count > 0 && (
             <div className="py-8 border-t border-neutral-100">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-2 bg-neutral-300" />
                 <h2 className="text-sm font-mono uppercase tracking-wider text-neutral-900">
                   Confidence Killers
                   <span className="ml-2 text-neutral-400 normal-case">
-                    ({feedback.filler_words.count} filler word{feedback.filler_words.count !== 1 ? "s" : ""})
+                    ({fillerWords.count} filler word{fillerWords.count !== 1 ? "s" : ""})
                   </span>
                 </h2>
               </div>
               <div className="flex flex-wrap gap-3">
-                {Object.entries(feedback.filler_words.details).map(([word, count]) => (
+                {Object.entries(fillerWords.details).map(([word, count]) => (
                   <div
                     key={word}
                     className="flex items-center gap-2 border border-neutral-200 px-3 py-1.5 text-sm font-mono"
@@ -336,12 +338,18 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
                 Your Speech
               </h2>
             </div>
-            <p
-              className="transcript-highlight text-sm text-neutral-600 leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: sanitizeHighlightedTranscript(feedback.highlighted_transcript),
-              }}
-            />
+            {highlightedTranscript ? (
+              <p
+                className="transcript-highlight text-sm text-neutral-600 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHighlightedTranscript(highlightedTranscript),
+                }}
+              />
+            ) : (
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                {transcript}
+              </p>
+            )}
           </div>
 
           {/* CTA Buttons */}

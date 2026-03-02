@@ -128,10 +128,11 @@ export function PracticePage({ settings }: PracticePageProps) {
     setProcessingStatus("Analyzing your delivery");
     setProcessingSubstatus("Generating feedback");
 
-    // Use mock feedback but inject the real transcript
+    // Use mock feedback but inject the real transcript and transcription result
     const data: FeedbackData = {
       ...mockFeedbackData,
       transcript,
+      transcription: transcriptionResult,
     };
     setFeedbackData(data);
 
@@ -144,7 +145,6 @@ export function PracticePage({ settings }: PracticePageProps) {
         prompt: prompt.text,
         promptCategory: prompt.category,
         feedbackData: data,
-        transcription: transcriptionResult,
       };
       saveSession(session);
     }

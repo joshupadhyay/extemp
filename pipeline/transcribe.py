@@ -11,6 +11,7 @@ Serve:   modal serve pipeline/transcribe.py
 
 from __future__ import annotations
 
+import re
 import time
 import uuid
 
@@ -48,6 +49,110 @@ MODEL_DIR = "/models"
 AUDIO_DIR = "/audio"
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
 ALLOWED_EXTENSIONS = {".webm", ".mp4", ".wav", ".m4a", ".ogg", ".mp3"}
+
+# ---------------------------------------------------------------------------
+# Filler word detection
+# ---------------------------------------------------------------------------
+
+# Single-word fillers (matched case-insensitively against individual words)
+SINGLE_WORD_FILLERS = {"um", "uh", "like", "so", "basically", "right"}
+
+# Multi-word fillers (matched as consecutive word pairs, case-insensitive)
+MULTI_WORD_FILLERS = {"you know", "kind of", "sort of", "i mean"}
+
+
+def _strip_word(w: str) -> str:
+    """Lowercase and strip punctuation from a word for filler matching."""
+    return re.sub(r"[^\w']", "", w.lower())
+
+
+def detect_filler_words(words_list: list[dict]) -> dict:
+    """Scan word timestamps for filler words and return counts + positions.
+
+    Returns:
+        {
+            "count": int,
+            "details": {filler: count, ...},
+            "positions": [{"word": str, "start": float, "end": float}, ...]
+        }
+    """
+    details: dict[str, int] = {}
+    positions: list[dict] = []
+    consumed: set[int] = set()  # indices consumed by multi-word fillers
+
+    # Pass 1: detect multi-word fillers (consecutive pairs)
+    for i in range(len(words_list) - 1):
+        pair = _strip_word(words_list[i]["word"]) + " " + _strip_word(words_list[i + 1]["word"])
+        if pair in MULTI_WORD_FILLERS:
+            details[pair] = details.get(pair, 0) + 1
+            positions.append({
+                "word": pair,
+                "start": words_list[i]["start"],
+                "end": words_list[i + 1]["end"],
+                "_indices": [i, i + 1],
+            })
+            consumed.add(i)
+            consumed.add(i + 1)
+
+    # Pass 2: detect single-word fillers (skip words already consumed by multi-word)
+    for i, w in enumerate(words_list):
+        if i in consumed:
+            continue
+        cleaned = _strip_word(w["word"])
+        if cleaned in SINGLE_WORD_FILLERS:
+            details[cleaned] = details.get(cleaned, 0) + 1
+            positions.append({
+                "word": cleaned,
+                "start": w["start"],
+                "end": w["end"],
+                "_indices": [i],
+            })
+
+    # Sort positions by start time
+    positions.sort(key=lambda p: p["start"])
+
+    return {
+        "count": sum(details.values()),
+        "details": details,
+        "positions": positions,
+    }
+
+
+def generate_highlighted_transcript(words_list: list[dict], filler_result: dict) -> str:
+    """Build a transcript string with filler words wrapped in <mark> tags.
+
+    Uses the _indices from filler detection (O(m)) instead of scanning all
+    words by timestamp.
+    """
+    # Build index -> tag map from filler positions
+    filler_indices: dict[int, str] = {}
+
+    for pos in filler_result["positions"]:
+        idxs = pos["_indices"]
+        if len(idxs) == 2:
+            filler_indices[idxs[0]] = "multi_start"
+            filler_indices[idxs[1]] = "multi_end"
+        else:
+            filler_indices[idxs[0]] = "single"
+
+    parts: list[str] = []
+    i = 0
+    while i < len(words_list):
+        word_text = words_list[i]["word"]
+        tag = filler_indices.get(i)
+
+        if tag == "multi_start" and i + 1 < len(words_list):
+            next_text = words_list[i + 1]["word"]
+            parts.append(f"<mark>{word_text} {next_text}</mark>")
+            i += 2
+        elif tag == "single":
+            parts.append(f"<mark>{word_text}</mark>")
+            i += 1
+        else:
+            parts.append(word_text)
+            i += 1
+
+    return " ".join(parts)
 
 # ---------------------------------------------------------------------------
 # Transcription endpoint
@@ -166,6 +271,19 @@ class Whisper:
         word_count = len(words_list)
         speech_rate_wpm = round((word_count / speech_duration) * 60, 1) if speech_duration > 0 else 0
 
+        # Detect filler words from word-level timestamps (deterministic, no LLM)
+        filler_words = detect_filler_words(words_list)
+        highlighted_transcript = generate_highlighted_transcript(words_list, filler_words)
+
+        # Strip internal _indices from positions before returning
+        filler_words_clean = {
+            **filler_words,
+            "positions": [
+                {k: v for k, v in p.items() if k != "_indices"}
+                for p in filler_words["positions"]
+            ],
+        }
+
         return JSONResponse(
             content={
                 "transcript": transcript,
@@ -174,6 +292,8 @@ class Whisper:
                 "words": words_list,
                 "segments": segments_list,
                 "speech_rate_wpm": speech_rate_wpm,
+                "filler_words": filler_words_clean,
+                "highlighted_transcript": highlighted_transcript,
             },
         )
 

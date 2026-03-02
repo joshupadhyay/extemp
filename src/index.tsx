@@ -57,6 +57,19 @@ const server = serve({
             );
           }
 
+          // Save a local copy for testing/debugging (dev only)
+          if (process.env.NODE_ENV !== "production") {
+            try {
+              const ext = audioFile.name?.split(".").pop() || "webm";
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              const localPath = `./recordings/recording-${timestamp}.${ext}`;
+              await Bun.write(localPath, audioFile);
+              console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
+            } catch (e) {
+              console.warn("Failed to save local audio copy:", e);
+            }
+          }
+
           // Build new FormData for the Modal endpoint
           const modalForm = new FormData();
           modalForm.append("file", audioFile, audioFile.name || "recording.webm");
