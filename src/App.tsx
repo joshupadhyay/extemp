@@ -1,37 +1,44 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { APITester } from "./APITester";
+import { Mic } from "lucide-react";
+import { AsciiWaveform } from "./components/AsciiWaveform";
+import { ScrambleText } from "./components/ScrambleText";
+import { Button } from "@/components/ui/button";
 import "./index.css";
-
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
 
 export function App() {
   return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
+    <div className="split-panel">
+      {/* Left panel — ASCII waveform */}
+      <div className="relative border-r border-hairline flex items-center justify-center bg-bg-subtle overflow-hidden max-lg:h-[200px] lg:h-auto">
+        <AsciiWaveform />
       </div>
 
-      <Card className="bg-card/50 backdrop-blur-sm border-muted">
-        <CardContent className="pt-6">
-          <h1 className="text-5xl font-bold my-4 leading-tight">Bun + React</h1>
-          <p>
-            Edit{" "}
-            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">src/App.tsx</code> and
-            save to test HMR
+      {/* Right panel — content */}
+      <div className="flex flex-col justify-center px-[var(--pad)] py-12 lg:py-0">
+        <div className="max-w-[520px]">
+          <span className="section-label">Practice / Index 01</span>
+
+          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-8">
+            <ScrambleText text="Think fast. Speak clearly." />
+          </h1>
+
+          <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
+            Get a random prompt, organize your thoughts, speak, and receive AI
+            coaching feedback with framework detection. Train yourself to sound
+            prepared when you're not.
           </p>
-          <APITester />
-        </CardContent>
-      </Card>
+
+          <Button variant="cta" size="touch">
+            <Mic className="size-4" />
+            Start Practice
+          </Button>
+
+          <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
+            <span>FRAMEWORKS: PREP, STAR, ADD</span>
+            <span>FEEDBACK: AI COACH</span>
+            <span>STATUS: READY</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
