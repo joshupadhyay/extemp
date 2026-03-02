@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Timer } from "@/components/Timer";
 import { PromptCard } from "@/components/PromptCard";
@@ -9,7 +9,8 @@ import { getRandomPrompt } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
-import { Mic } from "lucide-react";
+import { Square } from "lucide-react";
+import { AsciiWaveform } from "@/components/AsciiWaveform";
 
 interface PracticePageProps {
   settings: Settings;
@@ -50,6 +51,19 @@ export function PracticePage({ settings }: PracticePageProps) {
   phaseRef.current = phase;
   const currentPromptRef = useRef(currentPrompt);
   currentPromptRef.current = currentPrompt;
+
+  // Elapsed timer for speaking phase (counts UP)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const speakingStartRef = useRef<number>(0);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speakingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSpeakingCompleteRef = useRef<() => void>(() => {});
+
+  function formatElapsed(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
 
   const handleStart = useCallback(() => {
     const prompt = getRandomPrompt();
@@ -138,6 +152,31 @@ export function PracticePage({ settings }: PracticePageProps) {
     setPhase("results");
   }, [stopRecording]);
 
+  // Keep ref in sync for use in useEffect without circular dependency
+  handleSpeakingCompleteRef.current = handleSpeakingComplete;
+
+  useEffect(() => {
+    if (phase === "speaking") {
+      speakingStartRef.current = Date.now();
+      setElapsedSeconds(0);
+
+      elapsedIntervalRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - speakingStartRef.current) / 1000);
+        setElapsedSeconds(elapsed);
+      }, 250);
+
+      // Auto-complete when speaking time limit reached
+      speakingTimeoutRef.current = setTimeout(() => {
+        handleSpeakingCompleteRef.current();
+      }, settings.speakingTime * 1000);
+
+      return () => {
+        if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
+        if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
+      };
+    }
+  }, [phase, settings.speakingTime]);
+
   const handleReset = useCallback(() => {
     setPhase("idle");
     setCurrentPrompt(null);
@@ -146,6 +185,26 @@ export function PracticePage({ settings }: PracticePageProps) {
     setProcessingSubstatus(undefined);
     setTranscribeError(null);
   }, []);
+
+  // Debug: jump to any phase with mock data
+  const debugSetPhase = useCallback((target: PracticePhase) => {
+    const mockPrompt = currentPrompt ?? getRandomPrompt();
+    setCurrentPrompt(mockPrompt);
+    setTranscribeError(null);
+
+    if (target === "idle") {
+      handleReset();
+    } else if (target === "processing") {
+      setProcessingStatus("Transcribing your speech");
+      setProcessingSubstatus("Sending audio to Whisper");
+      setPhase("processing");
+    } else if (target === "results") {
+      setFeedbackData(mockFeedbackData);
+      setPhase("results");
+    } else {
+      setPhase(target);
+    }
+  }, [currentPrompt, handleReset]);
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto py-8 px-4">
@@ -195,32 +254,90 @@ export function PracticePage({ settings }: PracticePageProps) {
 
       {/* Speaking phase */}
       {phase === "speaking" && currentPrompt && (
-        <div className="flex flex-col items-center gap-6 w-full">
-          <PromptCard prompt={currentPrompt} />
-          <Timer
-            duration={settings.speakingTime}
-            onComplete={handleSpeakingComplete}
-            label="Speaking Time"
-            isActive={true}
-          />
-          <div className="flex items-center gap-2">
-            <span
-              className="recording-dot inline-block w-2 h-2"
-              style={{ backgroundColor: "var(--cta)" }}
-            />
-            <Mic className="size-5" style={{ color: "var(--cta)" }} />
-            <span className="section-label mb-0">RECORDING</span>
+        <div className="fixed inset-0 flex flex-col bg-background" style={{ zIndex: 50 }}>
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <span
+                className="recording-dot inline-block w-2 h-2"
+                style={{ backgroundColor: "var(--cta)" }}
+              />
+              <span className="font-mono text-xs uppercase tracking-widest" style={{ color: "var(--cta)" }}>
+                REC
+              </span>
+            </div>
+            <span className="section-label mb-0">PRACTICE / INDEX 01</span>
           </div>
-          {micError && (
-            <p className="text-sm text-center" style={{ color: "var(--cta)" }}>{micError}</p>
-          )}
-          <Button
-            variant="outline"
-            onClick={handleSpeakingComplete}
-            className="mt-2"
-          >
-            Done
-          </Button>
+
+          {/* ASCII Waveform area with gradient fade */}
+          <div className="waveform-container flex-none" style={{ height: "35%" }}>
+            <AsciiWaveform className="w-full h-full" />
+          </div>
+
+          {/* Content area */}
+          <div className="flex flex-col flex-1 px-5 py-4 overflow-hidden">
+            {/* Prompt heading */}
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold tracking-tight leading-tight">
+                {currentPrompt.text}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1 font-mono uppercase tracking-wider">
+                {currentPrompt.category}
+              </p>
+            </div>
+
+            {/* Live transcript area */}
+            <div className="flex-1 overflow-y-auto mb-4">
+              <p className="text-base text-muted-foreground leading-relaxed">
+                Listening...<span className="cursor-blink" />
+              </p>
+            </div>
+
+            {/* Mic error */}
+            {micError && (
+              <p className="text-sm mb-2" style={{ color: "var(--cta)" }}>{micError}</p>
+            )}
+
+            {/* Timer + level bars */}
+            <div className="flex items-end justify-between mb-4">
+              <span className="font-mono text-4xl font-semibold tabular-nums leading-none">
+                {formatElapsed(elapsedSeconds)}
+              </span>
+              <div className="flex items-end gap-1">
+                <div className="level-bar" />
+                <div className="level-bar" />
+                <div className="level-bar" />
+                <div className="level-bar" />
+              </div>
+            </div>
+
+            {/* End Session button */}
+            <Button
+              variant="cta"
+              size="lg"
+              onClick={handleSpeakingComplete}
+              className="w-full h-12 text-base gap-2"
+            >
+              <Square className="size-4 fill-current" />
+              End Session
+            </Button>
+          </div>
+
+          {/* Footer bar */}
+          <div className="grid grid-cols-2 gap-px border-t border-border" style={{ backgroundColor: "var(--border)" }}>
+            <div className="bg-background px-4 py-2">
+              <span className="font-mono text-xs text-muted-foreground">Frameworks: Detecting...</span>
+            </div>
+            <div className="bg-background px-4 py-2">
+              <span className="font-mono text-xs text-muted-foreground">Feedback: AI Coach</span>
+            </div>
+            <div className="bg-background px-4 py-2">
+              <span className="font-mono text-xs text-muted-foreground">Status: Recording</span>
+            </div>
+            <div className="bg-background px-4 py-2">
+              <span className="font-mono text-xs text-muted-foreground">Mic: Built-in</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -231,23 +348,37 @@ export function PracticePage({ settings }: PracticePageProps) {
 
       {/* Results */}
       {phase === "results" && feedbackData && (
-        <div className="flex flex-col items-center gap-6 w-full">
+        <>
           {transcribeError && (
-            <div className="w-full border border-warning p-3">
+            <div className="w-full border border-warning p-3 mb-4">
               <span className="section-label mb-0">TRANSCRIPTION NOTE</span>
               <p className="text-sm text-muted-foreground mt-1">
                 Live transcription failed ({transcribeError}). Showing mock transcript for demo.
               </p>
             </div>
           )}
-          <ResultsPanel data={feedbackData} />
-          <div className="flex gap-3 pt-4">
-            <Button size="lg" onClick={handleStart}>
-              Try Another
-            </Button>
-            <Button size="lg" variant="outline" onClick={handleReset}>
-              Done
-            </Button>
+          <ResultsPanel data={feedbackData} onPracticeAgain={handleStart} onDone={handleReset} />
+        </>
+      )}
+
+      {/* Debug panel — dev only */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="fixed bottom-4 right-4 bg-neutral-900 text-white p-3 font-mono text-[10px] flex flex-col gap-1.5" style={{ zIndex: 9999 }}>
+          <span className="text-neutral-500 uppercase tracking-wider">Debug: {phase}</span>
+          <div className="flex flex-wrap gap-1">
+            {(["idle", "prompt", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => debugSetPhase(p)}
+                className={`px-2 py-1 uppercase tracking-wider cursor-pointer ${
+                  phase === p
+                    ? "bg-[#E8302A] text-white"
+                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
         </div>
       )}
