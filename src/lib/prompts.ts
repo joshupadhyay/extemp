@@ -1,6 +1,7 @@
 import type { Prompt } from "./types";
+import promptData from "../data/prompts.json" with { type: "json" };
 
-const prompts: Prompt[] = [
+const hardcodedPrompts: Prompt[] = [
   // Opinion questions
   { text: "Should college education be free for everyone?", category: "opinion" },
   { text: "Is social media doing more harm than good to society?", category: "opinion" },
@@ -9,7 +10,7 @@ const prompts: Prompt[] = [
   { text: "Should parents limit their children's screen time?", category: "opinion" },
   { text: "Is remote work better than working in an office?", category: "opinion" },
   { text: "Should athletes be considered role models?", category: "opinion" },
-  { text: "Is standardized testing an effective measure of student ability?",category: "opinion" },
+  { text: "Is standardized testing an effective measure of student ability?", category: "opinion" },
   { text: "Should the arts receive the same funding as STEM in schools?", category: "opinion" },
   { text: "Is it ethical to keep animals in zoos?", category: "opinion" },
   { text: "Should there be a maximum age limit for political leaders?", category: "opinion" },
@@ -25,7 +26,7 @@ const prompts: Prompt[] = [
   { text: "How should governments regulate big tech companies?", category: "policy" },
   { text: "What should be done to improve mental health support in schools?", category: "policy" },
   { text: "How can cities be redesigned to be more sustainable?", category: "policy" },
-  { text: "What is the best approach to immigration reform?",category: "policy" },
+  { text: "What is the best approach to immigration reform?", category: "policy" },
   { text: "How should society prepare for an aging population?", category: "policy" },
   { text: "What is the most pressing infrastructure investment a country should make?", category: "policy" },
   { text: "How should we address the student debt crisis?", category: "policy" },
@@ -47,7 +48,7 @@ const prompts: Prompt[] = [
 
   // Current events style
   { text: "What role should AI play in healthcare?", category: "current-events" },
-  { text: "How is remote work reshaping the future of cities?",category: "current-events" },
+  { text: "How is remote work reshaping the future of cities?", category: "current-events" },
   { text: "What are the biggest risks and benefits of cryptocurrency?", category: "current-events" },
   { text: "How should society adapt to the rapid advancement of AI?", category: "current-events" },
   { text: "What is the future of space exploration and why does it matter?", category: "current-events" },
@@ -60,6 +61,10 @@ const prompts: Prompt[] = [
   { text: "How will quantum computing change the technology landscape?", category: "current-events" },
   { text: "What role should nuclear energy play in addressing climate change?", category: "current-events" },
 ];
+
+const jsonPrompts: Prompt[] = promptData.prompts as Prompt[];
+
+const prompts: Prompt[] = [...hardcodedPrompts, ...jsonPrompts];
 
 export function getRandomPrompt(): Prompt {
   const index = Math.floor(Math.random() * prompts.length);
