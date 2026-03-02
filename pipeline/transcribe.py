@@ -118,6 +118,113 @@ def detect_filler_words(words_list: list[dict]) -> dict:
     }
 
 
+def compute_clarity_metrics(words_list: list[dict], segments_list: list[dict]) -> dict:
+    """Derive voice clarity metrics from Whisper's word timestamps and probabilities.
+
+    All metrics are computed from data Whisper already returns — no additional
+    API calls or models required.
+
+    Returns:
+        {
+            "avg_confidence": float,       # mean word probability (0-1)
+            "low_confidence_count": int,    # words with probability < 0.5
+            "pacing_variability": float,    # std dev of per-segment WPM
+            "pause_analysis": {
+                "total_pauses": int,        # gaps > 0.3s between consecutive words
+                "long_pauses": int,         # gaps > 1.0s
+                "avg_pause_duration": float, # mean duration of all pauses (> 0.3s)
+                "longest_pause": float,
+            },
+            "segment_pacing": [             # per-segment breakdown
+                {
+                    "segment_id": int,
+                    "wpm": float,
+                    "word_count": int,
+                    "duration": float,
+                    "pace_label": "fast" | "normal" | "slow",
+                },
+                ...
+            ],
+        }
+    """
+    import math
+
+    # --- Average confidence (word probability) ---
+    if words_list:
+        probabilities = [w["probability"] for w in words_list]
+        avg_confidence = round(sum(probabilities) / len(probabilities), 4)
+        low_confidence_count = sum(1 for p in probabilities if p < 0.5)
+    else:
+        avg_confidence = 0.0
+        low_confidence_count = 0
+
+    # --- Pause analysis (gaps between consecutive words) ---
+    PAUSE_THRESHOLD = 0.3   # seconds — anything shorter is normal inter-word spacing
+    LONG_PAUSE_THRESHOLD = 1.0
+
+    pauses: list[float] = []
+    for i in range(1, len(words_list)):
+        gap = words_list[i]["start"] - words_list[i - 1]["end"]
+        if gap > PAUSE_THRESHOLD:
+            pauses.append(round(gap, 3))
+
+    pause_analysis = {
+        "total_pauses": len(pauses),
+        "long_pauses": sum(1 for p in pauses if p > LONG_PAUSE_THRESHOLD),
+        "avg_pause_duration": round(sum(pauses) / len(pauses), 3) if pauses else 0.0,
+        "longest_pause": round(max(pauses), 3) if pauses else 0.0,
+    }
+
+    # --- Per-segment pacing ---
+    segment_pacing: list[dict] = []
+    segment_wpms: list[float] = []
+
+    for seg in segments_list:
+        seg_duration = seg["end"] - seg["start"]
+        if seg_duration <= 0:
+            continue
+        # Count words in this segment by timestamp overlap
+        seg_words = [
+            w for w in words_list
+            if w["start"] >= seg["start"] and w["end"] <= seg["end"]
+        ]
+        word_count = len(seg_words)
+        wpm = round((word_count / seg_duration) * 60, 1) if seg_duration > 0 else 0.0
+        segment_wpms.append(wpm)
+
+        # Label: <100 WPM = slow, >180 WPM = fast, else normal
+        if wpm < 100:
+            pace_label = "slow"
+        elif wpm > 180:
+            pace_label = "fast"
+        else:
+            pace_label = "normal"
+
+        segment_pacing.append({
+            "segment_id": seg["id"],
+            "wpm": wpm,
+            "word_count": word_count,
+            "duration": round(seg_duration, 3),
+            "pace_label": pace_label,
+        })
+
+    # --- Pacing variability (std dev of segment WPMs) ---
+    if len(segment_wpms) >= 2:
+        mean_wpm = sum(segment_wpms) / len(segment_wpms)
+        variance = sum((w - mean_wpm) ** 2 for w in segment_wpms) / len(segment_wpms)
+        pacing_variability = round(math.sqrt(variance), 2)
+    else:
+        pacing_variability = 0.0
+
+    return {
+        "avg_confidence": avg_confidence,
+        "low_confidence_count": low_confidence_count,
+        "pacing_variability": pacing_variability,
+        "pause_analysis": pause_analysis,
+        "segment_pacing": segment_pacing,
+    }
+
+
 def generate_highlighted_transcript(words_list: list[dict], filler_result: dict) -> str:
     """Build a transcript string with filler words wrapped in <mark> tags.
 
@@ -275,6 +382,9 @@ class Whisper:
         filler_words = detect_filler_words(words_list)
         highlighted_transcript = generate_highlighted_transcript(words_list, filler_words)
 
+        # Compute voice clarity metrics from existing Whisper data
+        clarity_metrics = compute_clarity_metrics(words_list, segments_list)
+
         # Strip internal _indices from positions before returning
         filler_words_clean = {
             **filler_words,
@@ -294,6 +404,7 @@ class Whisper:
                 "speech_rate_wpm": speech_rate_wpm,
                 "filler_words": filler_words_clean,
                 "highlighted_transcript": highlighted_transcript,
+                "clarity_metrics": clarity_metrics,
             },
         )
 

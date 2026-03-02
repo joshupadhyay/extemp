@@ -82,6 +82,44 @@ export interface FillerWordsResult {
   positions: FillerWordPosition[];
 }
 
+// ---------------------------------------------------------------------------
+// Voice clarity metrics (Tier 1 — derived from Whisper output, no extra APIs)
+// ---------------------------------------------------------------------------
+
+export interface PauseAnalysis {
+  /** Number of pauses > 0.3s between consecutive words */
+  total_pauses: number;
+  /** Number of pauses > 1.0s */
+  long_pauses: number;
+  /** Mean duration of all detected pauses (seconds) */
+  avg_pause_duration: number;
+  /** Duration of the longest pause (seconds) */
+  longest_pause: number;
+}
+
+export interface SegmentPacing {
+  segment_id: number;
+  /** Words per minute for this segment */
+  wpm: number;
+  word_count: number;
+  /** Segment duration in seconds */
+  duration: number;
+  pace_label: "fast" | "normal" | "slow";
+}
+
+export interface ClarityMetrics {
+  /** Mean Whisper word probability (0-1). Higher = clearer speech. */
+  avg_confidence: number;
+  /** Count of words with probability < 0.5 */
+  low_confidence_count: number;
+  /** Std dev of per-segment WPM. Lower = more consistent pacing. */
+  pacing_variability: number;
+  /** Pause detection from word timestamp gaps */
+  pause_analysis: PauseAnalysis;
+  /** Per-segment pacing breakdown */
+  segment_pacing: SegmentPacing[];
+}
+
 export interface TranscriptionResult {
   transcript: string;
   duration: number;
@@ -91,4 +129,5 @@ export interface TranscriptionResult {
   speech_rate_wpm: number;
   filler_words: FillerWordsResult;
   highlighted_transcript: string;
+  clarity_metrics?: ClarityMetrics;
 }
