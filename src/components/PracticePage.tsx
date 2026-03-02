@@ -103,20 +103,6 @@ export function PracticePage({ settings }: PracticePageProps) {
       // If stop fails we have no audio — fall through to mock
     }
 
-    // Save audio locally for testing/debugging
-    if (audioBlob && audioBlob.size > 0) {
-      try {
-        const saveForm = new FormData();
-        const ext = audioBlob.type.includes("mp4") ? ".mp4" : ".webm";
-        saveForm.append("file", audioBlob, `recording${ext}`);
-        const saveRes = await fetch("/api/save-audio", { method: "POST", body: saveForm });
-        const saveData = await saveRes.json();
-        console.log("Audio saved locally:", saveData);
-      } catch (err) {
-        console.warn("Failed to save audio locally:", err);
-      }
-    }
-
     let transcript: string;
     let transcriptionResult: TranscriptionResult | undefined;
 
@@ -159,7 +145,6 @@ export function PracticePage({ settings }: PracticePageProps) {
         prompt: prompt.text,
         promptCategory: prompt.category,
         feedbackData: data,
-        transcription: transcriptionResult,
       };
       saveSession(session);
     }

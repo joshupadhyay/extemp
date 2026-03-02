@@ -6,69 +6,18 @@
  *   bun scripts/test-pipeline.ts recordings/recording-2026-03-02T*.webm
  *
  * Tests:
- *   1. POST /api/save-audio  — saves the file (sanity check)
- *   2. POST /api/transcribe  — sends to Modal Whisper, validates response shape
- *   3. POST /api/evaluate    — sends transcript to OpenRouter LLM, validates feedback
+ *   1. POST /api/transcribe  — sends to Modal Whisper, validates response shape
+ *      (also saves audio server-side automatically)
+ *   2. POST /api/evaluate    — sends transcript to OpenRouter LLM, validates feedback
  */
 
+import type {
+  TranscriptionResult,
+  FeedbackData,
+  FeedbackScores,
+} from "@/lib/types";
+
 const BASE = "http://localhost:3000";
-
-interface WordTimestamp {
-  word: string;
-  start: number;
-  end: number;
-  probability: number;
-}
-
-interface Segment {
-  id: number;
-  start: number;
-  end: number;
-  text: string;
-}
-
-interface FillerWordsResult {
-  count: number;
-  details: Record<string, number>;
-  positions: { word: string; start: number; end: number }[];
-}
-
-interface TranscriptionResult {
-  transcript: string;
-  duration: number;
-  audio_id: string;
-  words: WordTimestamp[];
-  segments: Segment[];
-  speech_rate_wpm: number;
-  filler_words: FillerWordsResult;
-  highlighted_transcript: string;
-}
-
-interface FeedbackScores {
-  structure: number;
-  clarity: number;
-  specificity: number;
-  persuasiveness: number;
-  language: number;
-}
-
-interface Feedback {
-  overall_score: number;
-  coach_summary: string;
-  scores: FeedbackScores;
-  filler_words: { count: number; details: Record<string, number> };
-  framework_detected: string | null;
-  framework_suggested: string | null;
-  time_usage: string;
-  strengths: string[];
-  improvement: string;
-  highlighted_transcript: string;
-}
-
-interface FeedbackData {
-  transcript: string;
-  feedback: Feedback;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -115,26 +64,8 @@ async function main() {
   const mimeType = file.type || "audio/webm";
   console.log(`Audio file: ${audioPath} (${(fileSize / 1024).toFixed(1)} KB, ${mimeType})`);
 
-  // ----- Step 1: Save audio -----
-  section("Step 1: POST /api/save-audio");
-  {
-    const form = new FormData();
-    form.append("file", file, audioPath.split("/").pop()!);
-
-    const start = performance.now();
-    const res = await fetch(`${BASE}/api/save-audio`, { method: "POST", body: form });
-    const elapsed = ((performance.now() - start) / 1000).toFixed(2);
-    const data = await res.json();
-
-    assert(res.ok, `Status ${res.status} (${elapsed}s)`);
-    assert(data.saved === true, `saved: ${data.saved}`);
-    assert(typeof data.filename === "string", `filename: ${data.filename}`);
-    assert(data.size > 0, `size: ${data.size} bytes`);
-    console.log(`  Saved as: ${data.filename}`);
-  }
-
-  // ----- Step 2: Transcribe -----
-  section("Step 2: POST /api/transcribe (Modal Whisper)");
+  // ----- Step 1: Transcribe -----
+  section("Step 1: POST /api/transcribe (Modal Whisper)");
   let transcription: TranscriptionResult;
   {
     const form = new FormData();
@@ -170,9 +101,9 @@ async function main() {
       let validTimes = true;
 
       for (let i = 0; i < words.length; i++) {
-        const w = words[i];
+        const w = words[i]!;
         if (w.start >= w.end) validTimes = false;
-        if (i > 0 && w.start < words[i - 1].start) ordered = false;
+        if (i > 0 && w.start < words[i - 1]!.start) ordered = false;
       }
 
       assert(validTimes, "All word timestamps have start < end");
@@ -188,7 +119,7 @@ async function main() {
       const segs = transcription.segments;
       let segOrdered = true;
       for (let i = 1; i < segs.length; i++) {
-        if (segs[i].start < segs[i - 1].start) segOrdered = false;
+        if (segs[i]!.start < segs[i - 1]!.start) segOrdered = false;
       }
       assert(segOrdered, "Segments are ordered by start time");
 
@@ -199,13 +130,42 @@ async function main() {
     // Speech rate sanity
     assert(transcription.speech_rate_wpm > 50 && transcription.speech_rate_wpm < 300, `Speech rate ${transcription.speech_rate_wpm} WPM is in reasonable range (50-300)`);
 
+    // Filler words (deterministic from Whisper timestamps)
+    assert(typeof transcription.filler_words === "object", `filler_words present`);
+    assert(typeof transcription.filler_words.count === "number", `filler_words.count: ${transcription.filler_words.count}`);
+    assert(typeof transcription.filler_words.details === "object", `filler_words.details present`);
+    assert(Array.isArray(transcription.filler_words.positions), `filler_words.positions: ${transcription.filler_words.positions.length} items`);
+
+    // Validate filler positions have timestamps
+    if (transcription.filler_words.positions.length > 0) {
+      const pos = transcription.filler_words.positions;
+      const allHaveTimestamps = pos.every(p => typeof p.start === "number" && typeof p.end === "number" && typeof p.word === "string");
+      assert(allHaveTimestamps, "All filler positions have word, start, end");
+
+      const posOrdered = pos.every((p, i) => i === 0 || p.start >= pos[i - 1]!.start);
+      assert(posOrdered, "Filler positions are ordered by start time");
+    }
+
+    // Highlighted transcript
+    assert(typeof transcription.highlighted_transcript === "string", `highlighted_transcript present`);
+    assert(transcription.highlighted_transcript.length > 0, `highlighted_transcript non-empty`);
+    const markCount = (transcription.highlighted_transcript.match(/<mark>/g) || []).length;
+    assert(markCount === transcription.filler_words.count, `<mark> count (${markCount}) matches filler count (${transcription.filler_words.count})`);
+
     console.log(`\n  Transcript preview:`);
     console.log(`  "${transcription.transcript.slice(0, 200)}${transcription.transcript.length > 200 ? "..." : ""}"`);
     console.log(`  Words: ${transcription.words.length}, Segments: ${transcription.segments.length}, WPM: ${transcription.speech_rate_wpm}`);
+    console.log(`  Filler words: ${transcription.filler_words.count} total`);
+    if (Object.keys(transcription.filler_words.details).length > 0) {
+      console.log(`  Filler details: ${JSON.stringify(transcription.filler_words.details)}`);
+    }
+    if (markCount > 0) {
+      console.log(`  Highlighted transcript preview: "${transcription.highlighted_transcript.slice(0, 200)}..."`);
+    }
   }
 
-  // ----- Step 3: Evaluate -----
-  section("Step 3: POST /api/evaluate (OpenRouter LLM)");
+  // ----- Step 2: Evaluate -----
+  section("Step 2: POST /api/evaluate (OpenRouter LLM)");
   {
     const payload = {
       transcript: transcription.transcript,
@@ -248,10 +208,6 @@ async function main() {
       assert(typeof val === "number" && val >= 1 && val <= 10, `scores.${key}: ${val}`);
     }
 
-    // Filler words
-    assert(typeof fb.filler_words === "object", `filler_words present`);
-    assert(typeof fb.filler_words.count === "number", `filler_words.count: ${fb.filler_words.count}`);
-
     // Framework
     assert(fb.framework_detected === null || typeof fb.framework_detected === "string", `framework_detected: ${fb.framework_detected}`);
     assert(fb.framework_suggested === null || typeof fb.framework_suggested === "string", `framework_suggested: ${fb.framework_suggested}`);
@@ -263,20 +219,11 @@ async function main() {
     assert(Array.isArray(fb.strengths) && fb.strengths.length > 0, `strengths: ${fb.strengths.length} items`);
     assert(typeof fb.improvement === "string" && fb.improvement.length > 0, `improvement present`);
 
-    // Highlighted transcript
-    assert(typeof fb.highlighted_transcript === "string", `highlighted_transcript present`);
-    const markCount = (fb.highlighted_transcript.match(/<mark>/g) || []).length;
-    console.log(`  Filler words highlighted with <mark>: ${markCount} instances`);
-
     console.log(`\n  Coach Summary:`);
     console.log(`  "${fb.coach_summary}"`);
     console.log(`\n  Overall Score: ${fb.overall_score}/10`);
     console.log(`  Framework Detected: ${fb.framework_detected || "none"}`);
     console.log(`  Framework Suggested: ${fb.framework_suggested || "none"}`);
-    console.log(`  Filler Words: ${fb.filler_words.count} total`);
-    if (Object.keys(fb.filler_words.details).length > 0) {
-      console.log(`  Filler Details: ${JSON.stringify(fb.filler_words.details)}`);
-    }
   }
 
   // ----- Summary -----

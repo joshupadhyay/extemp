@@ -29,7 +29,6 @@ export interface SpeechSession {
   prompt: string;
   promptCategory: string;
   feedbackData: FeedbackData;
-  transcription?: TranscriptionResult;
 }
 
 export interface Settings {
@@ -68,7 +67,7 @@ export interface TranscriptionSegment {
   start: number;
   end: number;
   text: string;
-  avg_logprob: number;
+  avg_logprob?: number;
 }
 
 export interface FillerWordPosition {

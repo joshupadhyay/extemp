@@ -37,37 +37,6 @@ const server = serve({
       },
     },
 
-    "/api/save-audio": {
-      async POST(req) {
-        try {
-          const formData = await req.formData();
-          const audioFile = formData.get("file");
-          if (!audioFile || !(audioFile instanceof File)) {
-            return Response.json(
-              { error: "No audio file provided." },
-              { status: 400 },
-            );
-          }
-
-          const ext = audioFile.name?.split(".").pop() || "webm";
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-          const filename = `recording-${timestamp}.${ext}`;
-          const path = `./recordings/${filename}`;
-
-          await Bun.write(path, audioFile);
-
-          console.log(`Saved audio: ${path} (${audioFile.size} bytes)`);
-          return Response.json({ saved: true, filename, path, size: audioFile.size });
-        } catch (err) {
-          console.error("Save audio error:", err);
-          return Response.json(
-            { error: "Failed to save audio file." },
-            { status: 500 },
-          );
-        }
-      },
-    },
-
     "/api/transcribe": {
       async POST(req) {
         if (!MODAL_ENDPOINT_URL) {
@@ -88,15 +57,17 @@ const server = serve({
             );
           }
 
-          // Save a local copy for testing/debugging
-          try {
-            const ext = audioFile.name?.split(".").pop() || "webm";
-            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-            const localPath = `./recordings/recording-${timestamp}.${ext}`;
-            await Bun.write(localPath, audioFile.slice());
-            console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
-          } catch (e) {
-            console.warn("Failed to save local audio copy:", e);
+          // Save a local copy for testing/debugging (dev only)
+          if (process.env.NODE_ENV !== "production") {
+            try {
+              const ext = audioFile.name?.split(".").pop() || "webm";
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              const localPath = `./recordings/recording-${timestamp}.${ext}`;
+              await Bun.write(localPath, audioFile);
+              console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
+            } catch (e) {
+              console.warn("Failed to save local audio copy:", e);
+            }
           }
 
           // Build new FormData for the Modal endpoint

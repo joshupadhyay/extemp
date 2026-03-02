@@ -11,6 +11,7 @@ Serve:   modal serve pipeline/transcribe.py
 
 from __future__ import annotations
 
+import re
 import time
 import uuid
 
@@ -62,7 +63,6 @@ MULTI_WORD_FILLERS = {"you know", "kind of", "sort of", "i mean"}
 
 def _strip_word(w: str) -> str:
     """Lowercase and strip punctuation from a word for filler matching."""
-    import re
     return re.sub(r"[^\w']", "", w.lower())
 
 
@@ -89,6 +89,7 @@ def detect_filler_words(words_list: list[dict]) -> dict:
                 "word": pair,
                 "start": words_list[i]["start"],
                 "end": words_list[i + 1]["end"],
+                "_indices": [i, i + 1],
             })
             consumed.add(i)
             consumed.add(i + 1)
@@ -104,6 +105,7 @@ def detect_filler_words(words_list: list[dict]) -> dict:
                 "word": cleaned,
                 "start": w["start"],
                 "end": w["end"],
+                "_indices": [i],
             })
 
     # Sort positions by start time
@@ -119,24 +121,19 @@ def detect_filler_words(words_list: list[dict]) -> dict:
 def generate_highlighted_transcript(words_list: list[dict], filler_result: dict) -> str:
     """Build a transcript string with filler words wrapped in <mark> tags.
 
-    Uses the positions from filler detection to determine which word indices
-    to wrap, then reconstructs the transcript preserving original word text.
+    Uses the _indices from filler detection (O(m)) instead of scanning all
+    words by timestamp.
     """
-    # Build a set of word-list indices that are filler words
-    filler_indices: dict[int, str] = {}  # index -> filler phrase
+    # Build index -> tag map from filler positions
+    filler_indices: dict[int, str] = {}
 
     for pos in filler_result["positions"]:
-        # Find the matching word(s) by start/end time
-        for i, w in enumerate(words_list):
-            if abs(w["start"] - pos["start"]) < 0.001:
-                if " " in pos["word"]:
-                    # Multi-word filler: mark both this index and next
-                    filler_indices[i] = "multi_start"
-                    if i + 1 < len(words_list):
-                        filler_indices[i + 1] = "multi_end"
-                else:
-                    filler_indices[i] = "single"
-                break
+        idxs = pos["_indices"]
+        if len(idxs) == 2:
+            filler_indices[idxs[0]] = "multi_start"
+            filler_indices[idxs[1]] = "multi_end"
+        else:
+            filler_indices[idxs[0]] = "single"
 
     parts: list[str] = []
     i = 0
@@ -278,6 +275,15 @@ class Whisper:
         filler_words = detect_filler_words(words_list)
         highlighted_transcript = generate_highlighted_transcript(words_list, filler_words)
 
+        # Strip internal _indices from positions before returning
+        filler_words_clean = {
+            **filler_words,
+            "positions": [
+                {k: v for k, v in p.items() if k != "_indices"}
+                for p in filler_words["positions"]
+            ],
+        }
+
         return JSONResponse(
             content={
                 "transcript": transcript,
@@ -286,7 +292,7 @@ class Whisper:
                 "words": words_list,
                 "segments": segments_list,
                 "speech_rate_wpm": speech_rate_wpm,
-                "filler_words": filler_words,
+                "filler_words": filler_words_clean,
                 "highlighted_transcript": highlighted_transcript,
             },
         )

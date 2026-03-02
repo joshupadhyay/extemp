@@ -44,10 +44,7 @@ export function HistoryPage() {
             <p className="text-lg font-medium">{selected.prompt}</p>
           </CardContent>
         </Card>
-        <ResultsPanel data={{
-          ...selected.feedbackData,
-          transcription: selected.feedbackData.transcription ?? selected.transcription,
-        }} />
+        <ResultsPanel data={selected.feedbackData} />
       </div>
     );
   }
