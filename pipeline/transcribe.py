@@ -10,17 +10,11 @@ Serve:   modal serve pipeline/transcribe.py
 
 from __future__ import annotations
 
-import tempfile
+import io
 import time
-from pathlib import Path
 
 import modal
 
-# fastapi is only installed inside the Modal container image.
-# The `from __future__ import annotations` above makes the type hint a
-# lazy string, so the import below can safely fail on the local machine
-# where `modal deploy` is invoked.  Inside the container the import
-# succeeds and FastAPI resolves the annotation normally.
 try:
     from fastapi import UploadFile
     from fastapi.responses import JSONResponse
@@ -43,6 +37,8 @@ app = modal.App("extemp-whisper", image=image)
 
 MODEL_SIZE = "large-v3-turbo"
 MODEL_DIR = "/models"
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
+ALLOWED_EXTENSIONS = {".webm", ".mp4", ".wav", ".m4a", ".ogg", ".mp3"}
 
 # ---------------------------------------------------------------------------
 # Transcription endpoint
@@ -59,7 +55,10 @@ class Whisper:
 
     @modal.enter()
     def load_model(self):
+        import os
         from faster_whisper import WhisperModel
+
+        already_cached = os.path.isdir(os.path.join(MODEL_DIR, MODEL_SIZE))
 
         self.model = WhisperModel(
             MODEL_SIZE,
@@ -67,35 +66,48 @@ class Whisper:
             compute_type="float16",
             download_root=MODEL_DIR,
         )
-        # Commit any newly-downloaded weights so future containers see them.
-        model_volume.commit()
+
+        if not already_cached:
+            model_volume.commit()
 
     @modal.fastapi_endpoint(method="POST")
     async def transcribe(self, file: UploadFile):
+        from pathlib import Path
+
+        # Validate file extension
+        suffix = Path(file.filename).suffix.lower() if file.filename else ""
+        if suffix and suffix not in ALLOWED_EXTENSIONS:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Unsupported file type: {suffix}. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"},
+            )
+
         start = time.perf_counter()
 
-        # Write the uploaded audio to a temp file so faster-whisper can read it.
-        suffix = Path(file.filename).suffix if file.filename else ".webm"
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
+        # Read upload into memory and enforce size limit
+        contents = await file.read()
+        if len(contents) > MAX_UPLOAD_BYTES:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"File too large ({len(contents)} bytes). Max: {MAX_UPLOAD_BYTES} bytes."},
+            )
 
-        segments, _info = self.model.transcribe(
-            tmp_path,
-            beam_size=1,
-            language="en",
-            vad_filter=True,
-        )
-        transcript = " ".join(seg.text.strip() for seg in segments)
+        try:
+            segments, _info = self.model.transcribe(
+                io.BytesIO(contents),
+                beam_size=3,
+                language="en",
+                vad_filter=True,
+            )
+            transcript = " ".join(seg.text.strip() for seg in segments)
+        except Exception:
+            return JSONResponse(
+                status_code=422,
+                content={"error": "Could not decode audio file."},
+            )
+
         duration = round(time.perf_counter() - start, 2)
-
-        Path(tmp_path).unlink(missing_ok=True)
 
         return JSONResponse(
             content={"transcript": transcript, "duration": duration},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*",
-            },
         )
