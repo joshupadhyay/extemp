@@ -209,6 +209,14 @@
   background: linear-gradient(to top, var(--background), transparent);
 }
 
+/* Highlighted transcript — filler words only */
+.transcript-highlight mark {
+  background-color: rgba(232, 48, 42, 0.1);
+  color: #E8302A;
+  font-weight: 500;
+  padding: 0 2px;
+}
+
 /* Scramble text hover effect */
 .scramble-text {
   transition: color 200ms ease-out;

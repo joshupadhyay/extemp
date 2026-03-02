@@ -1,0 +1,239 @@
+<html vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <script src="https://cdn.tailwindcss.com" vid="4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" vid="5">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="6">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet" vid="7">
+    <script vid="8">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#E8302A',
+                            black: '#111111',
+                            gray: '#F5F5F5',
+                            darkgray: '#333333'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    spacing: {
+                        '128': '32rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <style vid="9">
+        
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        .ascii-art {
+            font-size: 10px;
+            line-height: 10px;
+            white-space: pre;
+            overflow: hidden;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-white text-brand-black w-full min-h-screen flex flex-col font-sans antialiased overflow-x-hidden" vid="10">
+
+    
+    <div class="w-full bg-brand-gray/30 border-b border-gray-100 flex flex-col items-center justify-center pt-8 pb-6 px-4 relative" vid="11">
+        
+        
+        <div class="ascii-art text-brand-black/90 font-mono tracking-tighter text-center select-none mb-6" vid="12">
+                .:.
+              .:::::.
+            .:::::::::.
+           .::|||||||::.
+          .:::|||||||:::.
+         .::::|||||||::::.
+        .:::::|||||||:::::.
+        ::::::|||||||::::::
+        ::::::|||||||::::::
+        ':::::|||||||:::::'
+         '::::|||||||::::'
+          ':::|||||||:::'
+           '::|||||||::'
+            ':::::::::'
+              ':::::'
+                ':'
+   .:.                       .:.
+ .:::::.                   .:::::.
+.:::::::.                 .:::::::.
+:::::::::      .:.        :::::::::
+':::::::'    .:::::.      ':::::::'
+  ':::'     .:::::::.       ':::'
+    :       :::::::::         :
+            ':::::::'
+              ':::'
+        </div>
+
+        
+        <div class="flex items-center gap-6 text-[10px] sm:text-xs font-mono text-gray-500 uppercase tracking-widest" vid="13">
+            <div class="flex flex-col items-center" vid="14">
+                <span class="text-brand-black font-bold" vid="15">02:14</span>
+                <span vid="16">Duration</span>
+            </div>
+            <div class="h-8 w-px bg-gray-300" vid="17"></div>
+            <div class="flex flex-col items-center" vid="18">
+                <span class="text-brand-black font-bold" vid="19">247</span>
+                <span vid="20">Words</span>
+            </div>
+            <div class="h-8 w-px bg-gray-300" vid="21"></div>
+            <div class="flex flex-col items-center" vid="22">
+                <span class="text-brand-black font-bold" vid="23">110</span>
+                <span vid="24">WPM</span>
+            </div>
+        </div>
+    </div>
+
+    
+    <main class="flex-1 flex flex-col px-6 py-8 max-w-xl mx-auto w-full" vid="25">
+        
+        
+        <div class="font-mono text-[10px] tracking-widest text-gray-400 mb-6 uppercase" vid="26">
+            Practice / Report 01
+        </div>
+
+        
+        <div class="flex items-end justify-between mb-10 fade-in" style="animation-delay: 0.1s;" vid="27">
+            <div vid="28">
+                <h1 class="text-6xl font-bold tracking-tighter text-brand-black leading-none" vid="29">
+                    78<span class="text-3xl text-gray-300 font-light" vid="30">/100</span>
+                </h1>
+                <p class="text-brand-red font-medium mt-2 text-sm uppercase tracking-wide" vid="31">Confidence Score</p>
+            </div>
+            <div class="mb-2" vid="32">
+                <span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium" vid="33">
+                    +12% vs last
+                </span>
+            </div>
+        </div>
+
+        
+        <div class="prose prose-sm max-w-none mb-12 fade-in" style="animation-delay: 0.2s;" vid="34">
+            <p class="text-lg leading-relaxed text-gray-800 font-light mb-6" vid="35">
+                <span class="font-semibold text-brand-black" vid="36">Solid opening.</span> You captured attention immediately by stating your thesis clearly in the first 15 seconds. This directness establishes authority and respects the listener's time.
+            </p>
+            <p class="text-base leading-relaxed text-gray-600 mb-6" vid="37">
+                However, notice the dip in confidence markers around the mid-point. You relied on "um" and "sort of" as bridging phrases while searching for your next point. In high-stakes communication, <span class="bg-brand-red/10 text-brand-red px-1 rounded" vid="38">silence is stronger than noise</span>. Next time, trust the pause. It gives your audience time to digest your last point.
+            </p>
+            <p class="text-base leading-relaxed text-gray-600" vid="39">
+                Your conclusion utilized the STAR method effectively, but felt slightly rushed. Try to slow down your delivery speed by 10% in the final summary to ensure the key takeaways land with impact.
+            </p>
+        </div>
+
+        
+        <div class="mb-10 fade-in" style="animation-delay: 0.3s;" vid="40">
+            <h3 class="font-mono text-xs uppercase tracking-widest text-gray-400 mb-4" vid="41">Frameworks Detected</h3>
+            <div class="flex flex-wrap gap-3" vid="42">
+                <div class="border border-brand-black bg-brand-black text-white px-4 py-3 rounded-lg w-full" vid="43">
+                    <div class="flex justify-between items-center mb-1" vid="44">
+                        <span class="font-bold text-sm tracking-wide" vid="45">PREP</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-red" viewBox="0 0 20 20" fill="currentColor" vid="46">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" vid="47"></path>
+                        </svg>
+                    </div>
+                    <p class="text-xs text-gray-300 font-mono" vid="48">Point • Reason • Example • Point</p>
+                    <div class="mt-2 text-xs text-gray-400 leading-snug" vid="49">
+                        Structure identified in segments 0:00 - 0:45. Strong adherence to the opening Point.
+                    </div>
+                </div>
+                
+                <div class="border border-gray-200 text-gray-400 px-4 py-3 rounded-lg w-full opacity-60" vid="50">
+                    <div class="flex justify-between items-center mb-1" vid="51">
+                        <span class="font-bold text-sm tracking-wide" vid="52">STAR</span>
+                        <span class="text-[10px] border border-gray-200 px-1 rounded" vid="53">PARTIAL</span>
+                    </div>
+                    <p class="text-xs font-mono" vid="54">Situation • Task • Action • Result</p>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="mb-8 fade-in" style="animation-delay: 0.4s;" vid="55">
+            <h3 class="font-mono text-xs uppercase tracking-widest text-gray-400 mb-4 border-b border-gray-100 pb-2 flex justify-between items-center" vid="56">
+                <span vid="57">Timeline</span>
+                <span class="text-[10px] cursor-pointer hover:text-brand-red" vid="58">EXPAND ALL</span>
+            </h3>
+            
+            <div class="space-y-4" vid="59">
+                
+                <div class="flex group cursor-pointer" vid="60">
+                    <div class="w-12 pt-1" vid="61">
+                        <span class="font-mono text-xs text-brand-red font-medium" vid="62">0:14</span>
+                    </div>
+                    <div class="flex-1 pb-4 border-b border-gray-50 border-dashed" vid="63">
+                        <p class="text-sm font-medium text-gray-800 group-hover:text-brand-red transition-colors" vid="64">Strong opening hook</p>
+                        <p class="text-xs text-gray-500 mt-1" vid="65">"The market is shifting faster than our strategy..."</p>
+                    </div>
+                </div>
+
+                
+                <div class="flex group cursor-pointer" vid="66">
+                    <div class="w-12 pt-1" vid="67">
+                        <span class="font-mono text-xs text-gray-400 font-medium" vid="68">0:32</span>
+                    </div>
+                    <div class="flex-1 pb-4 border-b border-gray-50 border-dashed" vid="69">
+                        <p class="text-sm font-medium text-gray-800 group-hover:text-brand-red transition-colors" vid="70">Hedging language detected</p>
+                        <p class="text-xs text-gray-500 mt-1" vid="71">Detected: "kind of", "sort of", "maybe"</p>
+                        <div class="mt-2 inline-block px-2 py-1 bg-gray-50 rounded text-[10px] text-gray-500 font-mono" vid="72">COACHING TIP: PAUSE INSTEAD</div>
+                    </div>
+                </div>
+
+                
+                <div class="flex group cursor-pointer" vid="73">
+                    <div class="w-12 pt-1" vid="74">
+                        <span class="font-mono text-xs text-brand-red font-medium" vid="75">0:45</span>
+                    </div>
+                    <div class="flex-1 pb-4 border-b border-gray-50 border-dashed" vid="76">
+                        <p class="text-sm font-medium text-gray-800 group-hover:text-brand-red transition-colors" vid="77">Effective Pivot</p>
+                        <p class="text-xs text-gray-500 mt-1" vid="78">Transitioned smoothly from problem to solution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    
+    <footer class="mt-auto py-8 px-6 border-t border-gray-100 bg-white" vid="79">
+        <div class="flex flex-col gap-3 font-mono text-[10px] text-gray-400 tracking-wider" vid="80">
+            <div class="flex justify-between items-center" vid="81">
+                <span vid="82">FRAMEWORK: PREP</span>
+                <span class="text-brand-red" vid="83">DETECTED</span>
+            </div>
+            <div class="flex justify-between items-center" vid="84">
+                <span vid="85">STATUS</span>
+                <span class="text-brand-black" vid="86">COMPLETE</span>
+            </div>
+            <div class="flex justify-between items-center" vid="87">
+                <span vid="88">WORD COUNT</span>
+                <span vid="89">247</span>
+            </div>
+            <div class="w-full h-1 bg-gray-100 mt-2 rounded-full overflow-hidden" vid="90">
+                <div class="h-full bg-brand-red w-[78%]" vid="91"></div>
+            </div>
+        </div>
+    </footer>
+
+
+</body></html>

@@ -186,6 +186,26 @@ export function PracticePage({ settings }: PracticePageProps) {
     setTranscribeError(null);
   }, []);
 
+  // Debug: jump to any phase with mock data
+  const debugSetPhase = useCallback((target: PracticePhase) => {
+    const mockPrompt = currentPrompt ?? getRandomPrompt();
+    setCurrentPrompt(mockPrompt);
+    setTranscribeError(null);
+
+    if (target === "idle") {
+      handleReset();
+    } else if (target === "processing") {
+      setProcessingStatus("Transcribing your speech");
+      setProcessingSubstatus("Sending audio to Whisper");
+      setPhase("processing");
+    } else if (target === "results") {
+      setFeedbackData(mockFeedbackData);
+      setPhase("results");
+    } else {
+      setPhase(target);
+    }
+  }, [currentPrompt, handleReset]);
+
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto py-8 px-4">
       {/* Idle */}
@@ -328,23 +348,37 @@ export function PracticePage({ settings }: PracticePageProps) {
 
       {/* Results */}
       {phase === "results" && feedbackData && (
-        <div className="flex flex-col items-center gap-6 w-full">
+        <>
           {transcribeError && (
-            <div className="w-full border border-warning p-3">
+            <div className="w-full border border-warning p-3 mb-4">
               <span className="section-label mb-0">TRANSCRIPTION NOTE</span>
               <p className="text-sm text-muted-foreground mt-1">
                 Live transcription failed ({transcribeError}). Showing mock transcript for demo.
               </p>
             </div>
           )}
-          <ResultsPanel data={feedbackData} />
-          <div className="flex gap-3 pt-4">
-            <Button size="lg" onClick={handleStart}>
-              Try Another
-            </Button>
-            <Button size="lg" variant="outline" onClick={handleReset}>
-              Done
-            </Button>
+          <ResultsPanel data={feedbackData} onPracticeAgain={handleStart} onDone={handleReset} />
+        </>
+      )}
+
+      {/* Debug panel — dev only */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="fixed bottom-4 right-4 bg-neutral-900 text-white p-3 font-mono text-[10px] flex flex-col gap-1.5" style={{ zIndex: 9999 }}>
+          <span className="text-neutral-500 uppercase tracking-wider">Debug: {phase}</span>
+          <div className="flex flex-wrap gap-1">
+            {(["idle", "prompt", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => debugSetPhase(p)}
+                className={`px-2 py-1 uppercase tracking-wider cursor-pointer ${
+                  phase === p
+                    ? "bg-[#E8302A] text-white"
+                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
         </div>
       )}
