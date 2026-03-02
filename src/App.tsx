@@ -1,37 +1,87 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { APITester } from "./APITester";
+import { useState, useEffect, useCallback } from "react";
+import { LandingPage } from "@/components/LandingPage";
+import { PracticePage } from "@/components/PracticePage";
+import { HistoryPage } from "@/components/HistoryPage";
+import { SettingsPage } from "@/components/SettingsPage";
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/routes";
+import { loadSettings, saveSettings } from "@/lib/storage";
+import type { Settings } from "@/lib/types";
 import "./index.css";
 
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+function useHash(): string {
+  const [hash, setHash] = useState(window.location.hash || ROUTES.home);
+
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash || ROUTES.home);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  return hash;
+}
+
+const navItems = [
+  { hash: ROUTES.home, label: "Home" },
+  { hash: ROUTES.practice, label: "Practice" },
+  { hash: ROUTES.history, label: "History" },
+  { hash: ROUTES.settings, label: "Settings" },
+];
 
 export function App() {
-  return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
-      </div>
+  const hash = useHash();
+  const [settings, setSettings] = useState<Settings>(loadSettings);
 
-      <Card className="bg-card/50 backdrop-blur-sm border-muted">
-        <CardContent className="pt-6">
-          <h1 className="text-5xl font-bold my-4 leading-tight">Bun + React</h1>
-          <p>
-            Edit{" "}
-            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">src/App.tsx</code> and
-            save to test HMR
-          </p>
-          <APITester />
-        </CardContent>
-      </Card>
+  const handleSettingsChange = useCallback((newSettings: Settings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  }, []);
+
+  const navigate = useCallback((target: string) => {
+    window.location.hash = target;
+  }, []);
+
+  const renderPage = () => {
+    switch (hash) {
+      case ROUTES.practice:
+        return <PracticePage settings={settings} />;
+      case ROUTES.history:
+        return <HistoryPage />;
+      case ROUTES.settings:
+        return <SettingsPage settings={settings} onSettingsChange={handleSettingsChange} />;
+      default:
+        return <LandingPage onNavigate={navigate} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col w-full">
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
+          <a
+            href={ROUTES.home}
+            className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
+          >
+            Extemp
+          </a>
+          <div className="flex items-center gap-1">
+            {navItems.map((item) => (
+              <Button
+                key={item.hash}
+                variant={hash === item.hash ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => navigate(item.hash)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <main className="flex-1">
+        {renderPage()}
+      </main>
     </div>
   );
 }
