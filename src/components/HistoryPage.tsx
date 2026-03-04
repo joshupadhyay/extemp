@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { loadSessions } from "@/lib/storage";
-import type { SpeechSession } from "@/lib/types";
+import { ROUTES } from "@/lib/routes";
+import type { SpeechSession, DialogueSummary } from "@/lib/types";
 import { ChevronLeft } from "lucide-react";
 
 function formatDate(iso: string): string {
@@ -17,17 +19,57 @@ function formatDate(iso: string): string {
   });
 }
 
-export function HistoryPage() {
-  const [sessions, setSessions] = useState<SpeechSession[]>(loadSessions);
-  const [selected, setSelected] = useState<SpeechSession | null>(null);
+type HistoryItem =
+  | { source: "local"; session: SpeechSession }
+  | { source: "supabase"; summary: DialogueSummary };
 
-  if (selected) {
+export function HistoryPage() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLocal, setSelectedLocal] = useState<SpeechSession | null>(null);
+
+  useEffect(() => {
+    const localSessions = loadSessions();
+    const localItems: HistoryItem[] = localSessions.map((s) => ({ source: "local" as const, session: s }));
+
+    fetch("/api/dialogues?limit=50")
+      .then((res) => (res.ok ? res.json() : { dialogues: [] }))
+      .then(({ dialogues }: { dialogues: DialogueSummary[] }) => {
+        const supabaseItems: HistoryItem[] = dialogues.map((d) => ({ source: "supabase" as const, summary: d }));
+
+        // Deduplicate: if a local session matches a Supabase one by prompt + close timestamp, prefer Supabase
+        const supabaseTimes = new Set(
+          dialogues.map((d) => `${d.prompt_text}|${new Date(d.started_at).toISOString().slice(0, 16)}`),
+        );
+        const dedupedLocal = localItems.filter((item) => {
+          const key = `${item.session.prompt}|${new Date(item.session.date).toISOString().slice(0, 16)}`;
+          return !supabaseTimes.has(key);
+        });
+
+        // Merge and sort by date descending
+        const merged = [...supabaseItems, ...dedupedLocal].sort((a, b) => {
+          const dateA = a.source === "supabase" ? a.summary.started_at : a.session.date;
+          const dateB = b.source === "supabase" ? b.summary.started_at : b.session.date;
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+
+        setItems(merged);
+      })
+      .catch(() => {
+        // API unavailable — show local only
+        setItems(localItems);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (selectedLocal) {
     return (
       <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto py-8 px-4">
         <div className="w-full">
           <Button
             variant="ghost"
-            onClick={() => setSelected(null)}
+            onClick={() => setSelectedLocal(null)}
             className="gap-1"
           >
             <ChevronLeft className="size-4" />
@@ -37,14 +79,14 @@ export function HistoryPage() {
         <Card className="bg-card/50 backdrop-blur-sm border-muted w-full">
           <CardHeader>
             <CardTitle className="text-base text-muted-foreground">
-              {formatDate(selected.date)}
+              {formatDate(selectedLocal.date)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-medium">{selected.prompt}</p>
+            <p className="text-lg font-medium">{selectedLocal.prompt}</p>
           </CardContent>
         </Card>
-        <ResultsPanel data={selected.feedbackData} />
+        <ResultsPanel data={selectedLocal.feedbackData} />
       </div>
     );
   }
@@ -53,7 +95,13 @@ export function HistoryPage() {
     <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto py-8 px-4">
       <h2 className="text-2xl font-semibold">Practice History</h2>
 
-      {sessions.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col gap-3 w-full">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-card/30 animate-pulse border border-muted" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <p className="text-lg text-muted-foreground">No sessions yet.</p>
           <p className="text-sm text-muted-foreground">
@@ -62,33 +110,64 @@ export function HistoryPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3 w-full">
-          {sessions.map((session) => (
-            <Card
-              key={session.id}
-              className="bg-card/50 backdrop-blur-sm border-muted cursor-pointer hover:bg-card/70 transition-colors"
-              onClick={() => setSelected(session)}
-            >
-              <CardContent className="pt-4 pb-4 flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1 min-w-0">
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(session.date)}
-                  </p>
-                  <p className="font-medium truncate">
-                    {session.prompt}
-                  </p>
-                  {session.feedbackData.feedback.framework_detected && (
-                    <span className="text-xs text-muted-foreground">
-                      {session.feedbackData.feedback.framework_detected}
-                    </span>
-                  )}
-                </div>
-                <div className="shrink-0 text-2xl font-bold">
-                  {session.feedbackData.feedback.overall_score}
-                  <span className="text-sm text-muted-foreground font-normal">/10</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {items.map((item) => {
+            if (item.source === "local") {
+              const s = item.session;
+              return (
+                <Card
+                  key={s.id}
+                  className="bg-card/50 backdrop-blur-sm border-muted cursor-pointer hover:bg-card/70 transition-colors"
+                  onClick={() => setSelectedLocal(s)}
+                >
+                  <CardContent className="pt-4 pb-4 flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">{formatDate(s.date)}</p>
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground border border-muted px-1">
+                          local
+                        </span>
+                      </div>
+                      <p className="font-medium truncate">{s.prompt}</p>
+                      {s.feedbackData.feedback.framework_detected && (
+                        <span className="text-xs text-muted-foreground">
+                          {s.feedbackData.feedback.framework_detected}
+                        </span>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-2xl font-bold">
+                      {s.feedbackData.feedback.overall_score}
+                      <span className="text-sm text-muted-foreground font-normal">/10</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            const d = item.summary;
+            return (
+              <Card
+                key={d.dialogue_id}
+                className="bg-card/50 backdrop-blur-sm border-muted cursor-pointer hover:bg-card/70 transition-colors"
+                onClick={() => navigate(ROUTES.dialogue(d.dialogue_id))}
+              >
+                <CardContent className="pt-4 pb-4 flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <p className="text-sm text-muted-foreground">{formatDate(d.started_at)}</p>
+                    <p className="font-medium truncate">{d.prompt_text}</p>
+                    {d.framework_detected && (
+                      <span className="text-xs text-muted-foreground">
+                        {d.framework_detected}
+                      </span>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-2xl font-bold">
+                    {d.overall_score != null ? d.overall_score : "--"}
+                    <span className="text-sm text-muted-foreground font-normal">/10</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

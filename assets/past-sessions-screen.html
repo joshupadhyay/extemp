@@ -1,0 +1,232 @@
+<html lang="en" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">Extemp - Practice History</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17" vid="5"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" vid="6">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="7">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet" vid="8">
+    <style vid="9">
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .ascii-art {
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 10px;
+            font-size: 10px;
+            white-space: pre;
+            user-select: none;
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #e5e7eb;
+            border-radius: 3px;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-pill {
+            transition: all 0.2s ease;
+        }
+        .nav-pill:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .session-card:hover {
+            background-color: #fcfcfc;
+        }
+        .session-card:hover .view-btn {
+            background-color: #111827;
+            color: white;
+            border-color: #111827;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex bg-white overflow-hidden text-gray-900" vid="10">
+
+    
+    <div class="hidden md:flex w-[38%] bg-[#F7F7F7] flex-col items-center justify-center relative border-r border-gray-100" vid="11">
+        <div class="text-gray-400 opacity-60" vid="12">
+            <pre class="ascii-art" vid="13">                  .:.
+                 .===.
+                :==#==:
+               -+#%@%#+-
+              .+#@@@@#+:
+              :+%@@@@%+:
+             :=*@@@@@@*=:
+            .-+#@@@@@@#+-.
+           .:=*#@@@@@@#*=:.
+          .:-+#%@@@@@@#+-.
+         .:-=*#%@@@@@@#*=-:.
+        .:-=+#%@@@@@@@@%#+=-:.
+       .:-=+#%@@@@@@@@@@%#+=-:.
+      .:-=+#%@@@@%##%@@@@%#+=-:.
+     .:-=+#%@@@%#*==*#%@@@%#+=-:.
+    .:-=+#%@@%#+=-:: -=+#%@@%#+=-.
+    .-=+#%@@#+=-:.    .:-=+#%@@#+-.
+    -=+#%@%#+-.          .-+#%@%#=-
+   :=*#%@@#=.              .=#@@%#=:
+   +*#%@@*:                  :*@@%#*+
+  -+#%@@%.                    .%@@%#+-
+  =*#%@@:                      :@@%#*=
+ :+#%@@*                        *@@%#+:
+ -+#%@@-                        -@@%#+-
+ =*#%@@.                        .@@%#*=</pre>
+        </div>
+        <div class="absolute bottom-12 left-0 w-full flex justify-center" vid="14">
+            <div class="font-mono text-[10px] text-gray-300 tracking-widest uppercase" vid="15">
+                v1.0.4 • build 892a
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="flex-1 flex flex-col h-full relative bg-white" vid="16">
+        
+        
+        <div class="flex items-center justify-between px-8 md:px-16 pt-12 pb-8" vid="17">
+            <div vid="18">
+                <span class="font-mono text-xs tracking-[0.2em] text-gray-400 uppercase" vid="19">Practice / History</span>
+                <h1 class="text-4xl font-semibold tracking-tight text-gray-900 mt-2" vid="20">Past Sessions</h1>
+            </div>
+            <button class="font-mono text-xs text-gray-400 hover:text-gray-900 tracking-wider uppercase transition-colors flex items-center gap-2" vid="21">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vid="22"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" vid="23"></path><polyline points="16 17 21 12 16 7" vid="24"></polyline><line x1="21" y1="12" x2="9" y2="12" vid="25"></line></svg>
+                Sign Out
+            </button>
+        </div>
+
+        
+        <div class="flex-1 overflow-y-auto custom-scroll px-8 md:px-16 pb-24" vid="26">
+            <div class="max-w-4xl space-y-1 fade-in" vid="27">
+                
+                
+                <div class="session-card group flex items-center justify-between p-6 rounded-lg border border-transparent transition-all cursor-pointer border-b border-gray-100" vid="28">
+                    <div class="flex-1 pr-8" vid="29">
+                        <div class="flex items-center gap-4 mb-2" vid="30">
+                            <span class="font-mono text-[11px] text-gray-400 uppercase tracking-widest" vid="31">March 24, 2024</span>
+                            <span class="h-1 w-1 rounded-full bg-gray-300" vid="32"></span>
+                            <span class="font-mono text-[11px] text-gray-500" vid="33">07:42 Duration</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 leading-snug group-hover:text-[#D93025] transition-colors" vid="34">Should the federal government implement a universal basic income to combat automation?</h3>
+                    </div>
+                    <div class="flex items-center gap-6" vid="35">
+                        <div class="text-right hidden sm:block" vid="36">
+                            <div class="text-[10px] font-mono text-gray-400 uppercase mb-0.5" vid="37">Score</div>
+                            <div class="text-lg font-bold text-gray-900" vid="38">92<span class="text-xs text-gray-400 font-normal" vid="39">/100</span></div>
+                        </div>
+                        <button class="view-btn px-4 py-2 border border-gray-200 rounded text-xs font-mono font-medium tracking-wider uppercase transition-all" vid="40">View</button>
+                    </div>
+                </div>
+
+                
+                <div class="session-card group flex items-center justify-between p-6 rounded-lg border border-transparent transition-all cursor-pointer border-b border-gray-100" vid="41">
+                    <div class="flex-1 pr-8" vid="42">
+                        <div class="flex items-center gap-4 mb-2" vid="43">
+                            <span class="font-mono text-[11px] text-gray-400 uppercase tracking-widest" vid="44">March 21, 2024</span>
+                            <span class="h-1 w-1 rounded-full bg-gray-300" vid="45"></span>
+                            <span class="font-mono text-[11px] text-gray-500" vid="46">05:15 Duration</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 leading-snug group-hover:text-[#D93025] transition-colors" vid="47">Is space exploration a justifiable expense given current global socioeconomic crises?</h3>
+                    </div>
+                    <div class="flex items-center gap-6" vid="48">
+                        <div class="text-right hidden sm:block" vid="49">
+                            <div class="text-[10px] font-mono text-gray-400 uppercase mb-0.5" vid="50">Score</div>
+                            <div class="text-lg font-bold text-gray-900" vid="51">88<span class="text-xs text-gray-400 font-normal" vid="52">/100</span></div>
+                        </div>
+                        <button class="view-btn px-4 py-2 border border-gray-200 rounded text-xs font-mono font-medium tracking-wider uppercase transition-all" vid="53">View</button>
+                    </div>
+                </div>
+
+                
+                <div class="session-card group flex items-center justify-between p-6 rounded-lg border border-transparent transition-all cursor-pointer border-b border-gray-100" vid="54">
+                    <div class="flex-1 pr-8" vid="55">
+                        <div class="flex items-center gap-4 mb-2" vid="56">
+                            <span class="font-mono text-[11px] text-gray-400 uppercase tracking-widest" vid="57">March 18, 2024</span>
+                            <span class="h-1 w-1 rounded-full bg-gray-300" vid="58"></span>
+                            <span class="font-mono text-[11px] text-gray-500" vid="59">06:50 Duration</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 leading-snug group-hover:text-[#D93025] transition-colors" vid="60">Assess the impact of social media algorithms on modern political polarization.</h3>
+                    </div>
+                    <div class="flex items-center gap-6" vid="61">
+                        <div class="text-right hidden sm:block" vid="62">
+                            <div class="text-[10px] font-mono text-gray-400 uppercase mb-0.5" vid="63">Score</div>
+                            <div class="text-lg font-bold text-gray-900" vid="64">79<span class="text-xs text-gray-400 font-normal" vid="65">/100</span></div>
+                        </div>
+                        <button class="view-btn px-4 py-2 border border-gray-200 rounded text-xs font-mono font-medium tracking-wider uppercase transition-all" vid="66">View</button>
+                    </div>
+                </div>
+
+                
+                <div class="session-card group flex items-center justify-between p-6 rounded-lg border border-transparent transition-all cursor-pointer border-b border-gray-100" vid="67">
+                    <div class="flex-1 pr-8" vid="68">
+                        <div class="flex items-center gap-4 mb-2" vid="69">
+                            <span class="font-mono text-[11px] text-gray-400 uppercase tracking-widest" vid="70">March 15, 2024</span>
+                            <span class="h-1 w-1 rounded-full bg-gray-300" vid="71"></span>
+                            <span class="font-mono text-[11px] text-gray-500" vid="72">08:02 Duration</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 leading-snug group-hover:text-[#D93025] transition-colors" vid="73">Should the voting age be lowered to 16 in federal elections?</h3>
+                    </div>
+                    <div class="flex items-center gap-6" vid="74">
+                        <div class="text-right hidden sm:block" vid="75">
+                            <div class="text-[10px] font-mono text-gray-400 uppercase mb-0.5" vid="76">Score</div>
+                            <div class="text-lg font-bold text-gray-900" vid="77">95<span class="text-xs text-gray-400 font-normal" vid="78">/100</span></div>
+                        </div>
+                        <button class="view-btn px-4 py-2 border border-gray-200 rounded text-xs font-mono font-medium tracking-wider uppercase transition-all" vid="79">View</button>
+                    </div>
+                </div>
+
+                
+                <div class="session-card group flex items-center justify-between p-6 rounded-lg border border-transparent transition-all cursor-pointer" vid="80">
+                    <div class="flex-1 pr-8" vid="81">
+                        <div class="flex items-center gap-4 mb-2" vid="82">
+                            <span class="font-mono text-[11px] text-gray-400 uppercase tracking-widest" vid="83">March 12, 2024</span>
+                            <span class="h-1 w-1 rounded-full bg-gray-300" vid="84"></span>
+                            <span class="font-mono text-[11px] text-gray-500" vid="85">04:30 Duration</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 leading-snug group-hover:text-[#D93025] transition-colors" vid="86">How has the rise of the gig economy altered traditional labor protections?</h3>
+                    </div>
+                    <div class="flex items-center gap-6" vid="87">
+                        <div class="text-right hidden sm:block" vid="88">
+                            <div class="text-[10px] font-mono text-gray-400 uppercase mb-0.5" vid="89">Score</div>
+                            <div class="text-lg font-bold text-gray-900" vid="90">84<span class="text-xs text-gray-400 font-normal" vid="91">/100</span></div>
+                        </div>
+                        <button class="view-btn px-4 py-2 border border-gray-200 rounded text-xs font-mono font-medium tracking-wider uppercase transition-all" vid="92">View</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        
+        <div class="px-8 md:px-16 py-8 border-t border-gray-100 bg-white" vid="93">
+            <div class="flex gap-8" vid="94">
+                <span class="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase" vid="95">Total sessions: 05</span>
+                <span class="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase" vid="96">Avg score: 87.6</span>
+                <span class="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase" vid="97">Level: Academy Member</span>
+            </div>
+        </div>
+
+        
+        <div class="fixed bottom-6 right-6 z-50 flex gap-1 p-1.5 bg-[#232936] rounded-full shadow-2xl" vid="98">
+            <button class="nav-pill px-4 py-2 text-[10px] font-mono font-medium text-gray-400 hover:text-white rounded-full uppercase tracking-wider" vid="99">Login</button>
+            <button class="nav-pill px-4 py-2 text-[10px] font-mono font-medium text-white bg-white/10 rounded-full uppercase tracking-wider" vid="100">History</button>
+            <button class="nav-pill px-4 py-2 text-[10px] font-mono font-medium text-gray-400 hover:text-white rounded-full uppercase tracking-wider" vid="101">Submit</button>
+        </div>
+
+    </div>
+
+
+</body></html>

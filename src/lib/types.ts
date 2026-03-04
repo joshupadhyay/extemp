@@ -32,8 +32,8 @@ export interface SpeechSession {
 }
 
 export interface Settings {
-  prepTime: 60 | 120;
-  speakingTime: 60 | 120;
+  prepTime: number;
+  speakingTime: number;
 }
 
 export type PracticePhase =
@@ -118,6 +118,36 @@ export interface ClarityMetrics {
   pause_analysis: PauseAnalysis;
   /** Per-segment pacing breakdown */
   segment_pacing: SegmentPacing[];
+}
+
+// ---------------------------------------------------------------------------
+// API response types for Supabase-persisted dialogues
+// ---------------------------------------------------------------------------
+
+export interface DialogueSummary {
+  dialogue_id: string;
+  started_at: string;
+  finished_at: string | null;
+  actual_duration: number | null;
+  prompt_text: string;
+  prompt_category: string;
+  overall_score: number | null;
+  framework_detected: string | null;
+  coach_summary: string | null;
+}
+
+export interface DialogueDetail {
+  dialogue_id: string;
+  prompt_text: string;
+  prompt_category: string;
+  prep_time: number | null;
+  speaking_time: number | null;
+  actual_duration: number | null;
+  started_at: string;
+  finished_at: string | null;
+  transcript: string;
+  feedback: Feedback;
+  transcription?: TranscriptionResult;
 }
 
 export interface TranscriptionResult {

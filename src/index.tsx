@@ -1,11 +1,40 @@
 import { serve } from "bun";
 import index from "./index.html";
 import { handleEvaluate } from "./api/evaluate";
+import { auth } from "./lib/auth";
+import { pool } from "./lib/db";
+import { handleDialogues, handleDialogueById } from "./api/dialogues";
 
 const MODAL_ENDPOINT_URL = process.env.MODAL_ENDPOINT_URL;
 
+// --- Progressive audio chunk storage ---
+interface ChunkSession {
+  chunks: Map<number, Uint8Array>;
+  mimeType: string;
+  createdAt: number;
+}
+
+const chunkSessions = new Map<string, ChunkSession>();
+
+// Purge sessions older than 10 minutes every 5 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  for (const [id, session] of chunkSessions) {
+    if (session.createdAt < cutoff) {
+      chunkSessions.delete(id);
+    }
+  }
+}, 5 * 60 * 1000);
+
 const server = serve({
   routes: {
+    // Better Auth catch-all — must be before "/*"
+    "/api/auth/*": (req) => auth.handler(req),
+
+    // Dialogue endpoints
+    "/api/dialogues": (req) => handleDialogues(req),
+    "/api/dialogues/:id": (req) => handleDialogueById(req, req.params.id),
+
     // Serve index.html for all unmatched routes.
     "/*": index,
 
@@ -34,6 +63,18 @@ const server = serve({
     "/api/evaluate": {
       async POST(req) {
         return handleEvaluate(req);
+      },
+    },
+
+    "/api/user-count": {
+      async GET() {
+        try {
+          const result = await pool.query('SELECT COUNT(*) FROM "user"');
+          return Response.json({ count: parseInt(result.rows[0].count, 10) });
+        } catch (err) {
+          console.error("User count query error:", err);
+          return Response.json({ count: 0 });
+        }
       },
     },
 
@@ -84,6 +125,112 @@ const server = serve({
           return Response.json(body, { status: modalRes.status });
         } catch (err) {
           console.error("Transcribe proxy error:", err);
+          return Response.json(
+            { error: "Failed to reach transcription service." },
+            { status: 502 },
+          );
+        }
+      },
+    },
+
+    // Progressive audio chunk upload
+    "/api/audio-chunks/:sessionId": {
+      async POST(req) {
+        const { sessionId } = req.params;
+        const chunkIndex = parseInt(req.headers.get("X-Chunk-Index") || "0", 10);
+        const mimeType = req.headers.get("Content-Type") || "audio/webm";
+
+        const body = await req.arrayBuffer();
+        if (!body.byteLength) {
+          return Response.json({ error: "Empty chunk body" }, { status: 400 });
+        }
+
+        let session = chunkSessions.get(sessionId);
+        if (!session) {
+          session = { chunks: new Map(), mimeType, createdAt: Date.now() };
+          chunkSessions.set(sessionId, session);
+        }
+        session.chunks.set(chunkIndex, new Uint8Array(body));
+
+        console.log(`Chunk ${chunkIndex} for session ${sessionId}: ${body.byteLength} bytes (total chunks: ${session.chunks.size})`);
+
+        return Response.json({ ok: true, chunkIndex, sessionChunks: session.chunks.size });
+      },
+    },
+
+    // Finalize: assemble chunks and forward to Modal
+    "/api/audio-chunks/:sessionId/finalize": {
+      async POST(req) {
+        if (!MODAL_ENDPOINT_URL) {
+          return Response.json(
+            { error: "MODAL_ENDPOINT_URL is not configured on the server." },
+            { status: 500 },
+          );
+        }
+
+        const { sessionId } = req.params;
+        const session = chunkSessions.get(sessionId);
+
+        if (!session || session.chunks.size === 0) {
+          return Response.json(
+            { error: `No chunks found for session ${sessionId}` },
+            { status: 404 },
+          );
+        }
+
+        // Read optional mimeType override from request body
+        let mimeType = session.mimeType;
+        try {
+          const body = await req.json();
+          if (body.mimeType) mimeType = body.mimeType;
+        } catch {
+          // No JSON body — that's fine
+        }
+
+        // Assemble chunks in index order
+        const sortedIndices = [...session.chunks.keys()].sort((a, b) => a - b);
+        const totalSize = sortedIndices.reduce((sum, i) => sum + session.chunks.get(i)!.byteLength, 0);
+        const assembled = new Uint8Array(totalSize);
+        let offset = 0;
+        for (const i of sortedIndices) {
+          const chunk = session.chunks.get(i)!;
+          assembled.set(chunk, offset);
+          offset += chunk.byteLength;
+        }
+
+        console.log(`Finalize session ${sessionId}: ${sortedIndices.length} chunks, ${totalSize} bytes`);
+
+        // Clean up session
+        chunkSessions.delete(sessionId);
+
+        // Save local copy in dev
+        const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+        if (process.env.NODE_ENV !== "production") {
+          try {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const localPath = `./recordings/recording-${timestamp}.${ext}`;
+            await Bun.write(localPath, assembled);
+            console.log(`Saved assembled audio: ${localPath}`);
+          } catch (e) {
+            console.warn("Failed to save local audio copy:", e);
+          }
+        }
+
+        // Forward to Modal
+        try {
+          const file = new File([assembled], `recording.${ext}`, { type: mimeType });
+          const modalForm = new FormData();
+          modalForm.append("file", file, file.name);
+
+          const modalRes = await fetch(MODAL_ENDPOINT_URL, {
+            method: "POST",
+            body: modalForm,
+          });
+
+          const responseBody = await modalRes.json();
+          return Response.json(responseBody, { status: modalRes.status });
+        } catch (err) {
+          console.error("Finalize proxy error:", err);
           return Response.json(
             { error: "Failed to reach transcription service." },
             { status: 502 },
