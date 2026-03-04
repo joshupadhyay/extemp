@@ -68,7 +68,7 @@ function PageLayout({ title, children }: { title: string; children: React.ReactN
         </button>
         <button
           onClick={() => signOut()}
-          className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-foreground hover:text-foreground/70 transition-colors cursor-pointer"
         >
           <LogOut className="size-3.5" />
           Sign out
@@ -147,13 +147,15 @@ function HomePage({
               <Mic className="size-4" />
               Let's Go
             </Button>
-            <button
+            <Button
+              variant="outline"
+              size="touch"
               onClick={() => navigate(ROUTES.history)}
-              className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="gap-2"
             >
-              <Clock className="size-3.5" />
+              <Clock className="size-4" />
               Previous Sessions
-            </button>
+            </Button>
           </div>
 
           <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
@@ -162,7 +164,7 @@ function HomePage({
             <span>USER: {user.name?.toUpperCase()}</span>
             <button
               onClick={() => signOut()}
-              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-foreground hover:text-foreground/70 transition-colors cursor-pointer"
             >
               <LogOut className="size-3" />
               SIGN OUT
