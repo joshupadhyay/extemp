@@ -16,7 +16,9 @@ function getLastProvider(): "google" | "github" | null {
 }
 
 function handleSignIn(provider: "google" | "github") {
-  try { localStorage.setItem(LAST_PROVIDER_KEY, provider); } catch {}
+  try {
+    localStorage.setItem(LAST_PROVIDER_KEY, provider);
+  } catch {}
   signIn.social({ provider, callbackURL: "/" });
 }
 
@@ -33,9 +35,21 @@ export function LoginPage() {
 
   return (
     <div className="split-panel">
-      {/* Left panel — ASCII waveform */}
-      <div className="relative border-r border-hairline flex flex-col items-center justify-center bg-bg-subtle overflow-hidden max-lg:h-[200px] lg:h-auto">
+      {/* Left panel — ASCII waveform + steps */}
+      <div className="relative border-r border-hairline flex flex-col items-center justify-center bg-bg-subtle overflow-hidden max-lg:h-[320px] lg:h-auto">
         <AsciiWaveform />
+        <div className="absolute bottom-0 left-0 right-0 border-t border-hairline font-mono text-[0.6rem] uppercase tracking-[0.1em] text-muted-foreground">
+          <div
+            className="grid grid-cols-3 gap-px"
+            style={{ backgroundColor: "var(--border)" }}
+          >
+            <div className="bg-bg-subtle px-3 py-2">
+              1. Choose a category & prep
+            </div>
+            <div className="bg-bg-subtle px-3 py-2">2. Speak</div>
+            <div className="bg-bg-subtle px-3 py-2">3. Receive Feedback</div>
+          </div>
+        </div>
       </div>
 
       {/* Right panel — login */}
@@ -49,7 +63,6 @@ export function LoginPage() {
 
           <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
             Practice speaking clearly and effectively, under time constraints.
-            Sign in to get started.
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
