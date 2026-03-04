@@ -36,6 +36,32 @@
   }
 }
 
+/* Phase transitions */
+@keyframes phase-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes phase-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes countdown-pulse {
+  0% { opacity: 0; transform: scale(0.7); }
+  20% { opacity: 1; transform: scale(1.05); }
+  40% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+.phase-in {
+  animation: phase-in 400ms ease-out both;
+}
+
+.countdown-number {
+  animation: countdown-pulse 1000ms ease-out both;
+}
+
 /* Recording pulse — opacity only */
 @keyframes recording-pulse {
   0%, 100% { opacity: 1; }

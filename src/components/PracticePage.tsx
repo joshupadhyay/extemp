@@ -5,15 +5,18 @@ import { PromptCard } from "@/components/PromptCard";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPrompt } from "@/lib/prompts";
+import { getRandomPromptByCategory, getRandomPrompt } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
-import { Square, RefreshCw } from "lucide-react";
+import { Square } from "lucide-react";
 import { AsciiWaveform } from "@/components/AsciiWaveform";
+
+import { PromptScreenB } from "@/components/PromptScreenB";
 
 interface PracticePageProps {
   settings: Settings;
+  setSettings?: React.Dispatch<React.SetStateAction<Settings>>;
 }
 
 /** Send audio blob to the Bun server proxy which forwards to Modal (fallback path). */
@@ -68,8 +71,8 @@ async function finalizeTranscription(sessionId: string, mimeType: string): Promi
   return body as TranscriptionResult;
 }
 
-export function PracticePage({ settings }: PracticePageProps) {
-  const [phase, setPhase] = useState<PracticePhase>("idle");
+export function PracticePage({ settings, setSettings }: PracticePageProps) {
+  const [phase, setPhase] = useState<PracticePhase>("prompt");
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
   const [processingStatus, setProcessingStatus] = useState("");
@@ -100,16 +103,35 @@ export function PracticePage({ settings }: PracticePageProps) {
   }
 
   const handleStart = useCallback(() => {
-    const prompt = getRandomPrompt();
-    setCurrentPrompt(prompt);
+    setCurrentPrompt(null);
     setFeedbackData(null);
     setTranscribeError(null);
     setPhase("prompt");
   }, []);
 
-  const handleBeginPrep = useCallback(() => {
-    setPhase("prep");
+  // Countdown state
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownCategoryRef = useRef<string | undefined>();
+
+  const handleReady = useCallback((category?: string) => {
+    countdownCategoryRef.current = category;
+    setCountdown(3);
+    setPhase("countdown");
   }, []);
+
+  // Countdown timer: 3 → 2 → 1 → generate prompt → prep
+  useEffect(() => {
+    if (phase !== "countdown" || countdown === null) return;
+    if (countdown === 0) {
+      const prompt = getRandomPromptByCategory(countdownCategoryRef.current);
+      setCurrentPrompt(prompt);
+      setPhase("prep");
+      setCountdown(null);
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [phase, countdown]);
 
   const handlePrepComplete = useCallback(async () => {
     try {
@@ -264,7 +286,7 @@ export function PracticePage({ settings }: PracticePageProps) {
   }, [phase, settings.speakingTime]);
 
   const handleReset = useCallback(() => {
-    setPhase("idle");
+    setPhase("prompt");
     setCurrentPrompt(null);
     setFeedbackData(null);
     setProcessingStatus("");
@@ -294,46 +316,27 @@ export function PracticePage({ settings }: PracticePageProps) {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto py-8 px-4">
-      {/* Idle */}
-      {phase === "idle" && (
-        <div className="flex flex-col items-center gap-6 py-16">
-          <h2 className="text-2xl font-semibold text-center">
-            Ready to practice?
-          </h2>
-          <p className="text-muted-foreground text-center max-w-md">
-            You'll get a random prompt, {settings.prepTime === 60 ? "1 minute" : "2 minutes"} to
-            prep, and {settings.speakingTime === 60 ? "1 minute" : "2 minutes"} to speak. Then
-            we'll give you feedback.
-          </p>
-          <Button size="lg" onClick={handleStart} className="text-lg px-8 py-6">
-            Start Practice
-          </Button>
-        </div>
+      {/* Category selection + config */}
+      {phase === "prompt" && (
+        <PromptScreenB
+          settings={settings}
+          setSettings={(s) => setSettings?.((prev) => ({ ...prev, ...s }))}
+          onReady={handleReady}
+        />
       )}
 
-      {/* Prompt reveal */}
-      {phase === "prompt" && currentPrompt && (
-        <div className="flex flex-col items-center gap-6 w-full">
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">Your prompt:</p>
-            <button
-              onClick={handleStart}
-              title="Refresh"
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <RefreshCw className="size-3.5" />
-            </button>
-          </div>
-          <PromptCard prompt={currentPrompt} />
-          <Button size="lg" onClick={handleBeginPrep} className="text-lg px-8 py-6">
-            Begin Prep
-          </Button>
+      {/* Fullscreen countdown */}
+      {phase === "countdown" && countdown !== null && (
+        <div className="fixed inset-0 flex items-center justify-center bg-background" style={{ zIndex: 50 }}>
+          <span key={countdown} className="countdown-number font-mono text-[8rem] font-bold tabular-nums leading-none text-foreground">
+            {countdown}
+          </span>
         </div>
       )}
 
       {/* Prep phase */}
       {phase === "prep" && currentPrompt && (
-        <div className="flex flex-col items-center gap-6 w-full">
+        <div className="phase-in flex flex-col items-center gap-6 w-full">
           <PromptCard prompt={currentPrompt} />
           <Timer
             duration={settings.prepTime}
@@ -443,7 +446,7 @@ export function PracticePage({ settings }: PracticePageProps) {
 
       {/* Results */}
       {phase === "results" && feedbackData && (
-        <>
+        <div className="phase-in w-full">
           {transcribeError && (
             <div className="w-full border border-warning p-3 mb-4">
               <span className="section-label mb-0">TRANSCRIPTION NOTE</span>
@@ -453,7 +456,7 @@ export function PracticePage({ settings }: PracticePageProps) {
             </div>
           )}
           <ResultsPanel data={feedbackData} onPracticeAgain={handleStart} onDone={handleReset} />
-        </>
+        </div>
       )}
 
       {/* Debug panel — dev only */}
@@ -461,7 +464,7 @@ export function PracticePage({ settings }: PracticePageProps) {
         <div className="fixed bottom-4 right-4 bg-neutral-900 text-white p-3 font-mono text-[10px] flex flex-col gap-1.5" style={{ zIndex: 9999 }}>
           <span className="text-neutral-500 uppercase tracking-wider">Debug: {phase}</span>
           <div className="flex flex-wrap gap-1">
-            {(["idle", "prompt", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
+            {(["idle", "prompt", "countdown", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
               <button
                 key={p}
                 onClick={() => debugSetPhase(p)}

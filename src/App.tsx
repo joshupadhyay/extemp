@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { Mic, ArrowLeft, LogOut } from "lucide-react";
+import { Mic, ArrowLeft, LogOut, Clock } from "lucide-react";
 import { AsciiWaveform } from "./components/AsciiWaveform";
 import { ScrambleText } from "./components/ScrambleText";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ function AuthenticatedApp({ user }: { user: { name: string; image?: string | nul
   return (
     <Routes>
       <Route path={ROUTES.home} element={<HomePage user={user} settings={settings} setSettings={setSettings} />} />
-      <Route path={ROUTES.practice} element={<PageLayout title="PRACTICE"><PracticePage settings={settings} /></PageLayout>} />
+      <Route path={ROUTES.practice} element={<PageLayout title="PRACTICE"><PracticePage settings={settings} setSettings={setSettings} /></PageLayout>} />
       <Route path={ROUTES.history} element={<PageLayout title="HISTORY"><HistoryPage /></PageLayout>} />
       <Route path={ROUTES.settings} element={<PageLayout title="SETTINGS"><SettingsPage settings={settings} onSettingsChange={setSettings} /></PageLayout>} />
       <Route path="/dialogues/:id" element={<PageLayout title="DIALOGUE"><DialogueDetailPage /></PageLayout>} />
@@ -58,20 +58,17 @@ function PageLayout({ title, children }: { title: string; children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="flex items-center gap-3 px-[var(--pad)] py-3 border-b border-hairline">
+      <nav className="flex items-center gap-3 px-[var(--pad)] py-4 border-b border-hairline">
         <button
           onClick={() => navigate(ROUTES.home)}
-          className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-foreground hover:text-foreground/70 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="size-3.5" />
-          Back
+          <ArrowLeft className="size-4" />
+          Homepage
         </button>
-        <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-          / {title}
-        </span>
         <button
           onClick={() => signOut()}
-          className="ml-auto flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <LogOut className="size-3.5" />
           Sign out
@@ -128,9 +125,12 @@ function HomePage({
         <div className="max-w-[520px]">
           <span className="section-label">Practice / Index 01</span>
 
-          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-8">
-            <ScrambleText text="Think fast. Speak clearly." />
+          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-2">
+            <ScrambleText text="Extemp" />
           </h1>
+          <p className="text-[1rem] lg:text-[1.1rem] text-muted-foreground mb-8">
+            Think fast. Speak clearly.
+          </p>
 
           <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
             Get a random prompt, organize your thoughts, speak, and receive AI
@@ -138,51 +138,23 @@ function HomePage({
             prepared when you're not.
           </p>
 
-          {process.env.NODE_ENV !== "production" && (
-            <div className="flex gap-3 mb-4">
-              <div className="flex flex-col gap-1">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                  Prep (s)
-                </label>
-                <input
-                  type="number"
-                  key={`prep-${settings.prepTime}`}
-                  defaultValue={settings.prepTime}
-                  onBlur={(e) => {
-                    const v = Number(e.target.value);
-                    if (v > 0) setSettings((s) => ({ ...s, prepTime: v }));
-                    else e.target.value = String(settings.prepTime);
-                  }}
-                  className="w-24 h-9 px-3 py-1 rounded-md bg-neutral-900 text-white font-mono text-sm border border-neutral-700 focus:outline-none focus:border-neutral-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                  Speaking (s)
-                </label>
-                <input
-                  type="number"
-                  key={`speaking-${settings.speakingTime}`}
-                  defaultValue={settings.speakingTime}
-                  onBlur={(e) => {
-                    const v = Number(e.target.value);
-                    if (v > 0) setSettings((s) => ({ ...s, speakingTime: v }));
-                    else e.target.value = String(settings.speakingTime);
-                  }}
-                  className="w-24 h-9 px-3 py-1 rounded-md bg-neutral-900 text-white font-mono text-sm border border-neutral-700 focus:outline-none focus:border-neutral-500"
-                />
-              </div>
-            </div>
-          )}
-
-          <Button
-            variant="cta"
-            size="touch"
-            onClick={() => navigate(ROUTES.practice)}
-          >
-            <Mic className="size-4" />
-            Start Practice
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="cta"
+              size="touch"
+              onClick={() => navigate(ROUTES.practice)}
+            >
+              <Mic className="size-4" />
+              Let's Go
+            </Button>
+            <button
+              onClick={() => navigate(ROUTES.history)}
+              className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Clock className="size-3.5" />
+              Previous Sessions
+            </button>
+          </div>
 
           <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
             <span>FRAMEWORKS: PREP, STAR, ADD</span>

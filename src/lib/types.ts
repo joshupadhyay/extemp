@@ -39,6 +39,7 @@ export interface Settings {
 export type PracticePhase =
   | "idle"
   | "prompt"
+  | "countdown"
   | "prep"
   | "speaking"
   | "processing"
