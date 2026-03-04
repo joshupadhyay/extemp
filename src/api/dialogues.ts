@@ -1,4 +1,5 @@
-import { pool, getAuthUser } from "../lib/db";
+import { pool } from "../lib/db";
+import { getAuthUser } from "../lib/auth";
 
 /**
  * POST /api/dialogues — Save a completed dialogue
