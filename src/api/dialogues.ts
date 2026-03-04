@@ -240,35 +240,35 @@ async function handleListDialogues(req: Request): Promise<Response> {
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50", 10), 100);
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
 
-  const result = await pool.query(
-    `SELECT
-       d.id AS dialogue_id,
-       d.started_at,
-       d.finished_at,
-       d.actual_duration,
-       p.text AS prompt_text,
-       c.slug AS prompt_category,
-       f.overall_score,
-       f.framework_detected,
-       f.coach_summary
-     FROM dialogue d
-     JOIN dialogue_chain dc ON d.chain_id = dc.id
-     JOIN prompt p ON d.prompt_id = p.id
-     JOIN category c ON p.category_id = c.id
-     LEFT JOIN feedback f ON f.dialogue_id = d.id
-     WHERE dc.user_id = $1
-     ORDER BY d.started_at DESC
-     LIMIT $2 OFFSET $3`,
-    [user.id, limit, offset],
-  );
-
-  // Get total count
-  const countResult = await pool.query(
-    `SELECT COUNT(*) FROM dialogue d
-     JOIN dialogue_chain dc ON d.chain_id = dc.id
-     WHERE dc.user_id = $1`,
-    [user.id],
-  );
+  const [result, countResult] = await Promise.all([
+    pool.query(
+      `SELECT
+         d.id AS dialogue_id,
+         d.started_at,
+         d.finished_at,
+         d.actual_duration,
+         p.text AS prompt_text,
+         c.slug AS prompt_category,
+         f.overall_score,
+         f.framework_detected,
+         f.coach_summary
+       FROM dialogue d
+       JOIN dialogue_chain dc ON d.chain_id = dc.id
+       JOIN prompt p ON d.prompt_id = p.id
+       JOIN category c ON p.category_id = c.id
+       LEFT JOIN feedback f ON f.dialogue_id = d.id
+       WHERE dc.user_id = $1
+       ORDER BY d.started_at DESC
+       LIMIT $2 OFFSET $3`,
+      [user.id, limit, offset],
+    ),
+    pool.query(
+      `SELECT COUNT(*) FROM dialogue d
+       JOIN dialogue_chain dc ON d.chain_id = dc.id
+       WHERE dc.user_id = $1`,
+      [user.id],
+    ),
+  ]);
 
   return Response.json({
     dialogues: result.rows.map((row) => ({

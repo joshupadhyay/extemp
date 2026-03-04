@@ -19,7 +19,6 @@ interface UseAudioRecorderReturn {
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<StopRecordingResult>;
   error: string | null;
-  sessionId: string | null;
 }
 
 function getPreferredMimeType(): string {
@@ -45,7 +44,6 @@ function releaseStream(stream: MediaStream | null) {
 export function useAudioRecorder(options?: AudioRecorderOptions): UseAudioRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -80,7 +78,6 @@ export function useAudioRecorder(options?: AudioRecorderOptions): UseAudioRecord
 
     const newSessionId = crypto.randomUUID();
     sessionIdRef.current = newSessionId;
-    setSessionId(newSessionId);
 
     let stream: MediaStream | null = null;
     try {
@@ -166,5 +163,5 @@ export function useAudioRecorder(options?: AudioRecorderOptions): UseAudioRecord
     });
   }, []);
 
-  return { isRecording, startRecording, stopRecording, error, sessionId };
+  return { isRecording, startRecording, stopRecording, error };
 }
