@@ -38,13 +38,13 @@ export function LoginPage() {
       {/* Left panel — ASCII waveform + steps */}
       <div className="relative border-r border-hairline flex flex-col items-center justify-center bg-bg-subtle overflow-hidden max-lg:h-[320px] lg:h-auto">
         <AsciiWaveform />
-        <div className="absolute bottom-0 left-0 right-0 border-t border-hairline font-mono text-[0.6rem] uppercase tracking-[0.1em] text-muted-foreground">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-hairline font-mono text-[0.6rem] lg:text-xs uppercase tracking-[0.1em] text-muted-foreground">
           <div
             className="grid grid-cols-3 gap-px"
             style={{ backgroundColor: "var(--border)" }}
           >
             <div className="bg-bg-subtle px-3 py-2">
-              1. Choose a category & prep
+              1. Choose a Category
             </div>
             <div className="bg-bg-subtle px-3 py-2">2. Speak</div>
             <div className="bg-bg-subtle px-3 py-2">3. Receive Feedback</div>
@@ -57,8 +57,8 @@ export function LoginPage() {
         <div className="max-w-[520px]">
           <span className="section-label">Auth / Sign In</span>
 
-          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-8">
-            <ScrambleText text="Extemp" />
+          <h1 className="text-[2.5rem] lg:text-[4rem] font-medium tracking-tight leading-[1.1] mb-8">
+            Extemp
           </h1>
 
           <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
@@ -90,7 +90,7 @@ export function LoginPage() {
           </div>
 
           {memberCount !== null && (
-            <p className="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="mt-6 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">
               ACADEMY MEMBERS: {memberCount.toLocaleString()}
             </p>
           )}
