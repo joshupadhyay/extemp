@@ -44,7 +44,7 @@ function AuthenticatedApp({ user }: { user: { name: string; image?: string | nul
   return (
     <Routes>
       <Route path={ROUTES.home} element={<HomePage user={user} settings={settings} setSettings={setSettings} />} />
-      <Route path={ROUTES.practice} element={<PageLayout title="PRACTICE"><PracticePage settings={settings} /></PageLayout>} />
+      <Route path={ROUTES.practice} element={<PageLayout title="PRACTICE"><PracticePage settings={settings} setSettings={setSettings} /></PageLayout>} />
       <Route path={ROUTES.history} element={<PageLayout title="HISTORY"><HistoryPage /></PageLayout>} />
       <Route path={ROUTES.settings} element={<PageLayout title="SETTINGS"><SettingsPage settings={settings} onSettingsChange={setSettings} /></PageLayout>} />
       <Route path="/dialogues/:id" element={<PageLayout title="DIALOGUE"><DialogueDetailPage /></PageLayout>} />

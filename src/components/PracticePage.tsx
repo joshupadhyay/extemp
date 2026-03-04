@@ -5,15 +5,18 @@ import { PromptCard } from "@/components/PromptCard";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPrompt } from "@/lib/prompts";
+import { getRandomPrompt, prompts } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
-import { Square, RefreshCw } from "lucide-react";
+import { Square } from "lucide-react";
 import { AsciiWaveform } from "@/components/AsciiWaveform";
+
+import { PromptScreenB } from "@/components/PromptScreenB";
 
 interface PracticePageProps {
   settings: Settings;
+  setSettings?: React.Dispatch<React.SetStateAction<Settings>>;
 }
 
 /** Send audio blob to the Bun server proxy which forwards to Modal (fallback path). */
@@ -68,7 +71,7 @@ async function finalizeTranscription(sessionId: string, mimeType: string): Promi
   return body as TranscriptionResult;
 }
 
-export function PracticePage({ settings }: PracticePageProps) {
+export function PracticePage({ settings, setSettings }: PracticePageProps) {
   const [phase, setPhase] = useState<PracticePhase>("idle");
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
@@ -105,6 +108,17 @@ export function PracticePage({ settings }: PracticePageProps) {
     setFeedbackData(null);
     setTranscribeError(null);
     setPhase("prompt");
+  }, []);
+
+  const handleShuffle = useCallback((category?: string) => {
+    if (category) {
+      const filtered = prompts.filter((p) => p.category === category);
+      if (filtered.length > 0) {
+        setCurrentPrompt(filtered[Math.floor(Math.random() * filtered.length)]!);
+        return;
+      }
+    }
+    setCurrentPrompt(getRandomPrompt());
   }, []);
 
   const handleBeginPrep = useCallback(() => {
@@ -311,35 +325,16 @@ export function PracticePage({ settings }: PracticePageProps) {
         </div>
       )}
 
-      {/* Prompt reveal */}
+      {/* Prompt selection (two-step) */}
       {phase === "prompt" && currentPrompt && (
-        <div className="flex flex-col items-center gap-6 w-full">
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">Your prompt:</p>
-            <button
-              onClick={handleStart}
-              title="New random prompt"
-              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <RefreshCw className="size-3.5" />
-            </button>
-          </div>
-          <textarea
-            value={currentPrompt.text}
-            onChange={(e) =>
-              setCurrentPrompt({ ...currentPrompt, text: e.target.value })
-            }
-            rows={3}
-            className="w-full text-center text-xl font-semibold leading-snug bg-transparent border border-hairline px-4 py-4 resize-none focus:outline-none focus:border-foreground transition-colors"
-            placeholder="Type your own prompt..."
-          />
-          <span className="font-mono text-[0.65rem] uppercase tracking-[0.1em] text-muted-foreground">
-            {currentPrompt.category} — edit above or shuffle for a new one
-          </span>
-          <Button size="lg" onClick={handleBeginPrep} className="text-lg px-8 py-6">
-            Begin Prep
-          </Button>
-        </div>
+        <PromptScreenB
+          currentPrompt={currentPrompt}
+          setCurrentPrompt={(p) => setCurrentPrompt(p)}
+          settings={settings}
+          setSettings={(s) => setSettings?.((prev) => ({ ...prev, ...s }))}
+          onBeginPrep={handleBeginPrep}
+          onShuffle={handleShuffle}
+        />
       )}
 
       {/* Prep phase */}
