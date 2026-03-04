@@ -1,3 +1,5 @@
+import { pool } from "./_lib/db";
+
 export async function GET(): Promise<Response> {
   const diagnostics: Record<string, any> = {
     env_check: {
@@ -10,27 +12,12 @@ export async function GET(): Promise<Response> {
     },
   };
 
-  // Test pg import
   try {
-    const { Pool } = await import("pg");
-    diagnostics.pg_import = "ok";
-
-    const connStr = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-    if (connStr) {
-      diagnostics.connection_string_prefix = connStr.substring(0, 30) + "...";
-      try {
-        const pool = new Pool({ connectionString: connStr });
-        const result = await pool.query("SELECT 1 as test");
-        diagnostics.db_query = result.rows[0];
-        await pool.end();
-      } catch (dbErr: any) {
-        diagnostics.db_error = dbErr.message;
-      }
-    } else {
-      diagnostics.db_error = "No connection string found";
-    }
-  } catch (importErr: any) {
-    diagnostics.pg_import_error = importErr.message;
+    const result = await pool.query("SELECT 1 as test");
+    diagnostics.db_query = result.rows[0];
+  } catch (dbErr: any) {
+    diagnostics.db_error = dbErr.message;
+    diagnostics.db_stack = dbErr.stack?.split("\n").slice(0, 3);
   }
 
   return Response.json(diagnostics);
