@@ -1,4 +1,4 @@
-import { pool } from "./_lib/db";
+import { pool } from "./_lib/db.js";
 
 export async function GET(): Promise<Response> {
   const diagnostics: Record<string, any> = {

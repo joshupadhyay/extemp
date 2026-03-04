@@ -17,4 +17,4 @@ export type {
   DialogueSummary,
   DialogueDetail,
   TranscriptionResult,
-} from "../../src/lib/types";
+} from "../../src/lib/types.js";
