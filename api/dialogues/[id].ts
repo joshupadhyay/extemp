@@ -1,4 +1,4 @@
-import { handleDialogueById } from "../../src/api/dialogues";
+import { handleDialogueById } from "../_lib/dialogues";
 
 export const GET = (req: Request) => {
   const url = new URL(req.url);
