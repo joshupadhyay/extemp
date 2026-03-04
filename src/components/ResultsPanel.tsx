@@ -100,11 +100,11 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
     }, []);
 
   return (
-    <div className="fixed inset-0 flex bg-white text-neutral-900" style={{ zIndex: 50 }}>
-      {/* Left Panel — desktop only */}
-      <div className="hidden lg:flex w-5/12 h-full flex-col justify-between p-12 border-r border-neutral-100 bg-neutral-50/20 relative">
+    <div className="fixed inset-0 flex flex-col lg:flex-row bg-white text-neutral-900" style={{ zIndex: 50 }}>
+      {/* Left Panel — sidebar on desktop, bottom strip on mobile */}
+      <div className="flex order-last lg:order-first w-full lg:w-3/12 h-auto lg:h-full flex-col justify-between py-8 lg:py-0 p-8 border-t lg:border-t-0 lg:border-r border-neutral-100 bg-neutral-50/20 relative">
         {/* Checkmark icon */}
-        <div className="absolute top-12 left-12">
+        <div className="absolute top-8 left-8">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="24" height="24" fill="#111" />
             <path d="M7 12L10 15L17 8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -113,7 +113,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
 
         {/* ASCII waveform */}
         <div className="flex-1 flex flex-col items-center justify-center opacity-80">
-          <div className="ascii-art font-mono text-neutral-800">
+          <div className="ascii-art font-mono text-neutral-800 text-[6px] leading-[6px] lg:text-[8px] lg:leading-[8px] overflow-hidden">
             {ASCII_WAVEFORM}
           </div>
           <div className="mt-8 font-mono text-xs text-neutral-400 text-center">
@@ -122,7 +122,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
         </div>
 
         {/* Bottom stats */}
-        <div className="w-full pt-8 border-t border-neutral-200">
+        <div className="hidden lg:block w-full pt-8 border-t border-neutral-200">
           <div className="grid grid-cols-3 gap-4 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
             <div>
               <span className="block text-neutral-300 mb-1">Duration</span>
@@ -141,7 +141,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
       </div>
 
       {/* Right Panel */}
-      <div className="w-full lg:w-7/12 h-full flex flex-col relative bg-white">
+      <div className="order-first lg:order-last w-full lg:w-9/12 min-h-0 lg:h-full flex-1 flex flex-col relative bg-white">
         {/* Mobile stats banner — shown only on mobile */}
         <div className="lg:hidden w-full bg-neutral-50/30 border-b border-neutral-100 flex flex-col items-center pt-6 pb-4 px-4">
           <div className="flex items-center gap-6 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
