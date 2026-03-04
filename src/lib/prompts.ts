@@ -71,4 +71,11 @@ export function getRandomPrompt(): Prompt {
   return prompts[index]!;
 }
 
+export function getRandomPromptByCategory(category?: string): Prompt {
+  if (!category) return getRandomPrompt();
+  const filtered = prompts.filter((p) => p.category === category);
+  if (filtered.length === 0) return getRandomPrompt();
+  return filtered[Math.floor(Math.random() * filtered.length)]!;
+}
+
 export { prompts };

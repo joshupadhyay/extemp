@@ -11,12 +11,12 @@ const categoryLabels: Record<Prompt["category"], string> = {
 };
 
 const categoryColors: Record<Prompt["category"], string> = {
-  opinion: "bg-blue-500/20 text-blue-300",
-  policy: "bg-emerald-500/20 text-emerald-300",
-  hypothetical: "bg-purple-500/20 text-purple-300",
-  "current-events": "bg-amber-500/20 text-amber-300",
-  philosophical: "bg-rose-500/20 text-rose-300",
-  professional: "bg-cyan-500/20 text-cyan-300",
+  opinion: "bg-blue-100 text-blue-900",
+  policy: "bg-emerald-100 text-emerald-900",
+  hypothetical: "bg-purple-100 text-purple-900",
+  "current-events": "bg-amber-100 text-amber-900",
+  philosophical: "bg-rose-100 text-rose-900",
+  professional: "bg-cyan-100 text-cyan-900",
 };
 
 interface PromptCardProps {

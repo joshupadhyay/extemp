@@ -58,20 +58,17 @@ function PageLayout({ title, children }: { title: string; children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="flex items-center gap-3 px-[var(--pad)] py-3 border-b border-hairline">
+      <nav className="flex items-center gap-3 px-[var(--pad)] py-4 border-b border-hairline">
         <button
           onClick={() => navigate(ROUTES.home)}
-          className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-foreground hover:text-foreground/70 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="size-3.5" />
-          Back
+          <ArrowLeft className="size-4" />
+          Homepage
         </button>
-        <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-          / {title}
-        </span>
         <button
           onClick={() => signOut()}
-          className="ml-auto flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-auto flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <LogOut className="size-3.5" />
           Sign out
@@ -128,9 +125,12 @@ function HomePage({
         <div className="max-w-[520px]">
           <span className="section-label">Practice / Index 01</span>
 
-          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-8">
-            <ScrambleText text="Think fast. Speak clearly." />
+          <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-2">
+            <ScrambleText text="Extemp" />
           </h1>
+          <p className="text-[1rem] lg:text-[1.1rem] text-muted-foreground mb-8">
+            Think fast. Speak clearly.
+          </p>
 
           <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
             Get a random prompt, organize your thoughts, speak, and receive AI
