@@ -9,17 +9,16 @@ import { getRandomPrompt } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
-import { Square } from "lucide-react";
+import { Square, RefreshCw } from "lucide-react";
 import { AsciiWaveform } from "@/components/AsciiWaveform";
 
 interface PracticePageProps {
   settings: Settings;
 }
 
-/** Send audio blob to the Bun server proxy which forwards to Modal. */
+/** Send audio blob to the Bun server proxy which forwards to Modal (fallback path). */
 async function transcribeAudio(blob: Blob): Promise<TranscriptionResult> {
   const formData = new FormData();
-  // Derive extension from mime type for the filename
   const ext = blob.type.includes("mp4") ? ".mp4" : ".webm";
   formData.append("file", blob, `recording${ext}`);
 
@@ -37,6 +36,38 @@ async function transcribeAudio(blob: Blob): Promise<TranscriptionResult> {
   return body as TranscriptionResult;
 }
 
+/** Upload a single audio chunk to the server during recording. */
+async function uploadChunk(sessionId: string, chunk: Blob, index: number): Promise<void> {
+  const res = await fetch(`/api/audio-chunks/${sessionId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": chunk.type || "audio/webm",
+      "X-Chunk-Index": String(index),
+    },
+    body: chunk,
+  });
+  if (!res.ok) {
+    throw new Error(`Chunk upload failed: ${res.status}`);
+  }
+}
+
+/** Tell the server to assemble chunks and forward to Modal for transcription. */
+async function finalizeTranscription(sessionId: string, mimeType: string): Promise<TranscriptionResult> {
+  const res = await fetch(`/api/audio-chunks/${sessionId}/finalize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mimeType }),
+  });
+
+  const body = await res.json();
+
+  if (!res.ok) {
+    throw new Error(body.error || "Finalize failed");
+  }
+
+  return body as TranscriptionResult;
+}
+
 export function PracticePage({ settings }: PracticePageProps) {
   const [phase, setPhase] = useState<PracticePhase>("idle");
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
@@ -44,7 +75,10 @@ export function PracticePage({ settings }: PracticePageProps) {
   const [processingStatus, setProcessingStatus] = useState("");
   const [processingSubstatus, setProcessingSubstatus] = useState<string | undefined>();
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
-  const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder();
+  const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder({
+    onChunk: uploadChunk,
+    chunkInterval: 3000,
+  });
 
   // Refs for stable callback access
   const phaseRef = useRef(phase);
@@ -92,13 +126,17 @@ export function PracticePage({ settings }: PracticePageProps) {
 
     setPhase("processing");
     setProcessingStatus("Transcribing your speech");
-    setProcessingSubstatus("Sending audio to Whisper");
     setTranscribeError(null);
 
-    // Stop recording and get the audio blob
+    // Stop recording — waits for pending chunk uploads to settle
     let audioBlob: Blob | null = null;
+    let sid = "";
+    let allChunksUploaded = false;
     try {
-      audioBlob = await stopRecording();
+      const result = await stopRecording();
+      audioBlob = result.blob;
+      sid = result.sessionId;
+      allChunksUploaded = result.allChunksUploaded;
     } catch {
       // If stop fails we have no audio — fall through to mock
     }
@@ -108,8 +146,15 @@ export function PracticePage({ settings }: PracticePageProps) {
 
     if (audioBlob && audioBlob.size > 0) {
       try {
-        // Real transcription via Modal
-        transcriptionResult = await transcribeAudio(audioBlob);
+        if (allChunksUploaded) {
+          // Progressive path: chunks already on server, just finalize
+          setProcessingSubstatus("Waiting for Whisper");
+          transcriptionResult = await finalizeTranscription(sid, audioBlob.type);
+        } else {
+          // Fallback: upload entire blob as before
+          setProcessingSubstatus("Uploading audio to Whisper");
+          transcriptionResult = await transcribeAudio(audioBlob);
+        }
         transcript = transcriptionResult.transcript;
       } catch (err) {
         // If transcription fails, fall back to mock data
@@ -124,20 +169,45 @@ export function PracticePage({ settings }: PracticePageProps) {
       transcript = mockFeedbackData.transcript;
     }
 
-    // Phase 2: generate feedback (mock for now — LLM integration later)
+    // Phase 2: generate personalized feedback via LLM
     setProcessingStatus("Analyzing your delivery");
-    setProcessingSubstatus("Generating feedback");
+    setProcessingSubstatus("Generating coaching feedback");
 
-    // Use mock feedback but inject the real transcript and transcription result
-    const data: FeedbackData = {
-      ...mockFeedbackData,
-      transcript,
-      transcription: transcriptionResult,
-    };
+    let data: FeedbackData;
+    const prompt = currentPromptRef.current;
+
+    if (prompt) {
+      try {
+        const evalRes = await fetch("/api/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transcript,
+            prompt: prompt.text,
+            prep_time: settings.prepTime,
+            speaking_time: settings.speakingTime,
+          }),
+        });
+
+        if (!evalRes.ok) {
+          const errBody = await evalRes.json().catch(() => ({}));
+          throw new Error((errBody as any).error || `Evaluate returned ${evalRes.status}`);
+        }
+
+        data = await evalRes.json() as FeedbackData;
+        // Attach Whisper transcription data (filler words, clarity metrics, etc.)
+        data.transcription = transcriptionResult;
+      } catch (err) {
+        console.error("Evaluation failed, falling back to mock:", err);
+        data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+      }
+    } else {
+      data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+    }
+
     setFeedbackData(data);
 
     // Save session
-    const prompt = currentPromptRef.current;
     if (prompt) {
       const session: SpeechSession = {
         id: crypto.randomUUID(),
@@ -147,6 +217,22 @@ export function PracticePage({ settings }: PracticePageProps) {
         feedbackData: data,
       };
       saveSession(session);
+
+      // Save to Supabase (non-blocking)
+      fetch("/api/dialogues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt_text: prompt.text,
+          prompt_category: prompt.category,
+          prep_time: settings.prepTime,
+          speaking_time: settings.speakingTime,
+          actual_duration: transcriptionResult?.duration ?? null,
+          transcript: transcriptionResult ?? null,
+          feedback: data.feedback,
+          settings: { prepTime: settings.prepTime, speakingTime: settings.speakingTime },
+        }),
+      }).catch((err) => console.error("Supabase save failed:", err));
     }
 
     setPhase("results");
@@ -228,7 +314,16 @@ export function PracticePage({ settings }: PracticePageProps) {
       {/* Prompt reveal */}
       {phase === "prompt" && currentPrompt && (
         <div className="flex flex-col items-center gap-6 w-full">
-          <p className="text-sm text-muted-foreground">Your prompt:</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">Your prompt:</p>
+            <button
+              onClick={handleStart}
+              title="Refresh"
+              className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <RefreshCw className="size-3.5" />
+            </button>
+          </div>
           <PromptCard prompt={currentPrompt} />
           <Button size="lg" onClick={handleBeginPrep} className="text-lg px-8 py-6">
             Begin Prep

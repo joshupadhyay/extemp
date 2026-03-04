@@ -19,7 +19,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </div>
       <Button
         size="lg"
-        className="text-lg px-8 py-6"
+        className="text-lg px-8 py-6 rounded-lg"
         onClick={() => onNavigate(ROUTES.practice)}
       >
         Start Practice

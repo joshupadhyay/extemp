@@ -43,3 +43,6 @@ __pycache__/
 
 # Saved audio recordings (dev testing)
 recordings/
+
+# Vercel
+.vercel
