@@ -1,0 +1,20 @@
+// Re-export types from src/lib/types for Vercel API functions
+export type {
+  Feedback,
+  FeedbackData,
+  FeedbackScores,
+  SpeechSession,
+  Settings,
+  PracticePhase,
+  Prompt,
+  WordTimestamp,
+  TranscriptionSegment,
+  FillerWordPosition,
+  FillerWordsResult,
+  PauseAnalysis,
+  SegmentPacing,
+  ClarityMetrics,
+  DialogueSummary,
+  DialogueDetail,
+  TranscriptionResult,
+} from "../../src/lib/types";
