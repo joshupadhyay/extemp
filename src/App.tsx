@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { Mic, ArrowLeft, LogOut } from "lucide-react";
+import { Mic, ArrowLeft, LogOut, Clock } from "lucide-react";
 import { AsciiWaveform } from "./components/AsciiWaveform";
 import { ScrambleText } from "./components/ScrambleText";
 import { Button } from "@/components/ui/button";
@@ -175,14 +175,24 @@ function HomePage({
             </div>
           )}
 
-          <Button
-            variant="cta"
-            size="touch"
-            onClick={() => navigate(ROUTES.practice)}
-          >
-            <Mic className="size-4" />
-            Start Practice
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="cta"
+              size="touch"
+              onClick={() => navigate(ROUTES.practice)}
+            >
+              <Mic className="size-4" />
+              Start Practice
+            </Button>
+            <Button
+              variant="outline"
+              size="touch"
+              onClick={() => navigate(ROUTES.history)}
+            >
+              <Clock className="size-4" />
+              Past Sessions
+            </Button>
+          </div>
 
           <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
             <span>FRAMEWORKS: PREP, STAR, ADD</span>

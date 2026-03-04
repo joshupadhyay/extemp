@@ -318,13 +318,24 @@ export function PracticePage({ settings }: PracticePageProps) {
             <p className="text-sm text-muted-foreground">Your prompt:</p>
             <button
               onClick={handleStart}
-              title="Refresh"
+              title="New random prompt"
               className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <RefreshCw className="size-3.5" />
             </button>
           </div>
-          <PromptCard prompt={currentPrompt} />
+          <textarea
+            value={currentPrompt.text}
+            onChange={(e) =>
+              setCurrentPrompt({ ...currentPrompt, text: e.target.value })
+            }
+            rows={3}
+            className="w-full text-center text-xl font-semibold leading-snug bg-transparent border border-hairline px-4 py-4 resize-none focus:outline-none focus:border-foreground transition-colors"
+            placeholder="Type your own prompt..."
+          />
+          <span className="font-mono text-[0.65rem] uppercase tracking-[0.1em] text-muted-foreground">
+            {currentPrompt.category} — edit above or shuffle for a new one
+          </span>
           <Button size="lg" onClick={handleBeginPrep} className="text-lg px-8 py-6">
             Begin Prep
           </Button>
