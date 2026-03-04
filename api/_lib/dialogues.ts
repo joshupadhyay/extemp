@@ -1,5 +1,5 @@
-import { pool } from "./db";
-import { getAuthUser } from "./auth";
+import { pool } from "./db.js";
+import { getAuthUser } from "./auth.js";
 
 /**
  * POST /api/dialogues — Save a completed dialogue

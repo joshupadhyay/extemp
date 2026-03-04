@@ -1,4 +1,4 @@
-import { handleDialogueById } from "../_lib/dialogues";
+import { handleDialogueById } from "../_lib/dialogues.js";
 
 export const GET = (req: Request) => {
   const url = new URL(req.url);

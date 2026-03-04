@@ -1,4 +1,4 @@
-import type { Feedback, FeedbackData } from "./_lib/types";
+import type { Feedback, FeedbackData } from "./_lib/types.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
