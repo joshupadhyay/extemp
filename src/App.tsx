@@ -138,60 +138,22 @@ function HomePage({
             prepared when you're not.
           </p>
 
-          {process.env.NODE_ENV !== "production" && (
-            <div className="flex gap-3 mb-4">
-              <div className="flex flex-col gap-1">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                  Prep (s)
-                </label>
-                <input
-                  type="number"
-                  key={`prep-${settings.prepTime}`}
-                  defaultValue={settings.prepTime}
-                  onBlur={(e) => {
-                    const v = Number(e.target.value);
-                    if (v > 0) setSettings((s) => ({ ...s, prepTime: v }));
-                    else e.target.value = String(settings.prepTime);
-                  }}
-                  className="w-24 h-9 px-3 py-1 rounded-md bg-neutral-900 text-white font-mono text-sm border border-neutral-700 focus:outline-none focus:border-neutral-500"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                  Speaking (s)
-                </label>
-                <input
-                  type="number"
-                  key={`speaking-${settings.speakingTime}`}
-                  defaultValue={settings.speakingTime}
-                  onBlur={(e) => {
-                    const v = Number(e.target.value);
-                    if (v > 0) setSettings((s) => ({ ...s, speakingTime: v }));
-                    else e.target.value = String(settings.speakingTime);
-                  }}
-                  className="w-24 h-9 px-3 py-1 rounded-md bg-neutral-900 text-white font-mono text-sm border border-neutral-700 focus:outline-none focus:border-neutral-500"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
             <Button
               variant="cta"
               size="touch"
               onClick={() => navigate(ROUTES.practice)}
             >
               <Mic className="size-4" />
-              Start Practice
+              Let's Go
             </Button>
-            <Button
-              variant="outline"
-              size="touch"
+            <button
               onClick={() => navigate(ROUTES.history)}
+              className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              <Clock className="size-4" />
-              Past Sessions
-            </Button>
+              <Clock className="size-3.5" />
+              Previous Sessions
+            </button>
           </div>
 
           <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">

@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, ArrowRight, ChevronLeft } from "lucide-react";
+import { Shuffle, ArrowRight, Pencil } from "lucide-react";
 import type { Prompt, Settings } from "@/lib/types";
 
 const CATEGORIES = [
@@ -40,9 +40,10 @@ export function PromptScreenB({
   onBeginPrep,
   onShuffle,
 }: PromptScreenBProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [promptLocked, setPromptLocked] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [editedText, setEditedText] = useState(currentPrompt.text);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const handleShuffle = useCallback(() => {
     const cat = activeCategory === "all" ? undefined : activeCategory;
@@ -56,192 +57,191 @@ export function PromptScreenB({
     setLastPromptText(currentPrompt.text);
   }
 
-  const handleUsePrompt = useCallback(() => {
-    // Apply any edits the user made
+  const handleLockPrompt = useCallback(() => {
     if (editedText.trim() && editedText !== currentPrompt.text) {
       setCurrentPrompt({ ...currentPrompt, text: editedText.trim() });
     }
-    setStep(2);
+    setPromptLocked(true);
   }, [editedText, currentPrompt, setCurrentPrompt]);
 
-  const handleBack = useCallback(() => {
-    setStep(1);
+  const handleUnlockPrompt = useCallback(() => {
+    setPromptLocked(false);
+    setCountdown(null);
   }, []);
 
+  const handleStart = useCallback(() => {
+    setCountdown(3);
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 0) {
+      onBeginPrep();
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, onBeginPrep]);
+
   return (
-    <div className="flex flex-col w-full max-w-2xl mx-auto min-h-[80dvh] relative">
-      {/* Step 1: Prompt Selection */}
-      <div
-        className={`flex flex-col gap-6 w-full transition-all duration-300 ease-out ${
-          step === 1
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-4 pointer-events-none absolute inset-0"
-        }`}
-      >
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+      {/* Prompt section */}
+      <div className={`transition-opacity duration-300 ${promptLocked ? "opacity-50" : ""}`}>
         {/* Section label */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-            Select Prompt
+            Your Prompt
           </span>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-            Step 1 / 2
-          </span>
+          {promptLocked ? (
+            <button
+              onClick={handleUnlockPrompt}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200 ease-out cursor-pointer"
+            >
+              <Pencil className="size-3" />
+              <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em]">
+                Edit
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={handleShuffle}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200 ease-out cursor-pointer"
+            >
+              <Shuffle className="size-3.5" />
+              <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em]">
+                Shuffle
+              </span>
+            </button>
+          )}
         </div>
 
-        {/* Editable prompt textarea */}
+        {/* Prompt textarea / display */}
         <div className="border border-border">
-          <textarea
-            value={editedText}
-            onChange={(e) => setEditedText(e.target.value)}
-            className="w-full bg-transparent text-xl md:text-2xl font-semibold leading-relaxed p-5 md:p-8 resize-none focus:outline-none min-h-[200px] placeholder:text-muted-foreground/50"
-            placeholder="Type your own prompt or shuffle for one..."
-            rows={4}
-          />
+          {promptLocked ? (
+            <div className="p-5 md:p-8">
+              <p className="text-xl md:text-2xl font-semibold leading-relaxed">
+                {currentPrompt.text}
+              </p>
+            </div>
+          ) : (
+            <textarea
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              className="w-full bg-transparent text-xl md:text-2xl font-semibold leading-relaxed p-5 md:p-8 resize-none focus:outline-none min-h-[160px] placeholder:text-muted-foreground/50"
+              placeholder="Type your own prompt or shuffle for one..."
+              rows={3}
+            />
+          )}
         </div>
 
-        {/* Category filters */}
-        <div className="flex flex-wrap gap-2">
+        {/* Category filters — always visible */}
+        <div className="flex flex-wrap gap-2 mt-4">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`font-mono text-[0.7rem] uppercase tracking-[0.1em] px-3 py-2 border transition-colors duration-200 ease-out cursor-pointer ${
-                activeCategory === cat.key
+              onClick={promptLocked ? undefined : () => setActiveCategory(cat.key)}
+              className={`font-mono text-[0.7rem] uppercase tracking-[0.1em] px-3 py-2 border transition-colors duration-200 ease-out ${
+                promptLocked
+                  ? "cursor-default border-border text-muted-foreground"
+                  : "cursor-pointer"
+              } ${
+                !promptLocked && activeCategory === cat.key
                   ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                  : !promptLocked
+                    ? "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                    : ""
               }`}
             >
               {cat.label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Shuffle button */}
-        <button
-          onClick={handleShuffle}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-200 ease-out cursor-pointer self-start"
-        >
-          <Shuffle className="size-4" />
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em]">
-            Shuffle Prompt
-          </span>
-        </button>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Use This Prompt button */}
+      {/* Lock prompt button (when not yet locked) */}
+      {!promptLocked && (
         <Button
           variant="cta"
           size="lg"
-          onClick={handleUsePrompt}
+          onClick={handleLockPrompt}
           disabled={!editedText.trim()}
           className="w-full h-12 text-base gap-2"
         >
           Use This Prompt
           <ArrowRight className="size-4" />
         </Button>
-      </div>
+      )}
 
-      {/* Step 2: Config */}
-      <div
-        className={`flex flex-col gap-6 w-full transition-all duration-300 ease-out ${
-          step === 2
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4 pointer-events-none absolute inset-0"
-        }`}
-      >
-        {/* Back + section label */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors duration-200 ease-out cursor-pointer"
-          >
-            <ChevronLeft className="size-4" />
-            <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em]">
-              Back
+      {/* Config section — appears after prompt is locked */}
+      {promptLocked && (
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          {/* Prep time toggle */}
+          <div>
+            <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground block mb-3">
+              Prep Time
             </span>
-          </button>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-            Step 2 / 2
-          </span>
-        </div>
-
-        {/* Selected prompt (read-only) */}
-        <div className="border border-border p-5">
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground block mb-3">
-            Your Prompt
-          </span>
-          <p className="text-lg font-semibold leading-relaxed">
-            {currentPrompt.text}
-          </p>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground mt-2 block">
-            {currentPrompt.category}
-          </span>
-        </div>
-
-        {/* Prep time toggle */}
-        <div>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground block mb-3">
-            Prep Time
-          </span>
-          <div className="flex gap-0">
-            {PREP_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() =>
-                  setSettings({ ...settings, prepTime: opt.value })
-                }
-                className={`flex-1 font-mono text-sm py-3 border transition-colors duration-200 ease-out cursor-pointer ${
-                  settings.prepTime === opt.value
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
-                } ${opt === PREP_OPTIONS[0] ? "border-r-0" : ""}`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <div className="flex">
+              {PREP_OPTIONS.map((opt, i) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSettings({ ...settings, prepTime: opt.value })}
+                  className={`flex-1 font-mono text-sm py-3 border transition-colors duration-200 ease-out cursor-pointer ${
+                    settings.prepTime === opt.value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                  } ${i === 0 ? "border-r-0" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Speaking time toggle */}
-        <div>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground block mb-3">
-            Speaking Time
-          </span>
-          <div className="flex gap-0">
-            {SPEAKING_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() =>
-                  setSettings({ ...settings, speakingTime: opt.value })
-                }
-                className={`flex-1 font-mono text-sm py-3 border transition-colors duration-200 ease-out cursor-pointer ${
-                  settings.speakingTime === opt.value
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
-                } ${opt === SPEAKING_OPTIONS[0] ? "border-r-0" : ""}`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          {/* Speaking time toggle */}
+          <div>
+            <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground block mb-3">
+              Speaking Time
+            </span>
+            <div className="flex">
+              {SPEAKING_OPTIONS.map((opt, i) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSettings({ ...settings, speakingTime: opt.value })}
+                  className={`flex-1 font-mono text-sm py-3 border transition-colors duration-200 ease-out cursor-pointer ${
+                    settings.speakingTime === opt.value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                  } ${i === 0 ? "border-r-0" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Start / Countdown button */}
+          {countdown !== null ? (
+            <div className="flex items-center justify-center h-12 border border-foreground bg-foreground text-background">
+              <span className="font-mono text-2xl font-bold tabular-nums">
+                {countdown}
+              </span>
+            </div>
+          ) : (
+            <Button
+              variant="cta"
+              size="lg"
+              onClick={handleStart}
+              className="w-full h-12 text-base gap-2"
+            >
+              Start
+            </Button>
+          )}
         </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Begin Prep button */}
-        <Button
-          variant="cta"
-          size="lg"
-          onClick={onBeginPrep}
-          className="w-full h-12 text-base gap-2"
-        >
-          Begin Prep
-          <ArrowRight className="size-4" />
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

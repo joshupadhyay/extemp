@@ -72,8 +72,8 @@ async function finalizeTranscription(sessionId: string, mimeType: string): Promi
 }
 
 export function PracticePage({ settings, setSettings }: PracticePageProps) {
-  const [phase, setPhase] = useState<PracticePhase>("idle");
-  const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
+  const [phase, setPhase] = useState<PracticePhase>("prompt");
+  const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(() => getRandomPrompt());
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
   const [processingStatus, setProcessingStatus] = useState("");
   const [processingSubstatus, setProcessingSubstatus] = useState<string | undefined>();
@@ -278,8 +278,8 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   }, [phase, settings.speakingTime]);
 
   const handleReset = useCallback(() => {
-    setPhase("idle");
-    setCurrentPrompt(null);
+    setPhase("prompt");
+    setCurrentPrompt(getRandomPrompt());
     setFeedbackData(null);
     setProcessingStatus("");
     setProcessingSubstatus(undefined);
@@ -308,24 +308,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto py-8 px-4">
-      {/* Idle */}
-      {phase === "idle" && (
-        <div className="flex flex-col items-center gap-6 py-16">
-          <h2 className="text-2xl font-semibold text-center">
-            Ready to practice?
-          </h2>
-          <p className="text-muted-foreground text-center max-w-md">
-            You'll get a random prompt, {settings.prepTime === 60 ? "1 minute" : "2 minutes"} to
-            prep, and {settings.speakingTime === 60 ? "1 minute" : "2 minutes"} to speak. Then
-            we'll give you feedback.
-          </p>
-          <Button size="lg" onClick={handleStart} className="text-lg px-8 py-6">
-            Start Practice
-          </Button>
-        </div>
-      )}
-
-      {/* Prompt selection (two-step) */}
+      {/* Prompt selection + config */}
       {phase === "prompt" && currentPrompt && (
         <PromptScreenB
           currentPrompt={currentPrompt}
