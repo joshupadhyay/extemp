@@ -232,47 +232,21 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
             </div>
           </div>
 
-          {/* Frameworks Detected */}
-          {(feedback.framework_detected || feedback.framework_suggested) && (
-            <div className="py-8 border-t border-neutral-100">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-2 h-2 bg-neutral-300" />
-                <h2 className="text-sm font-mono uppercase tracking-wider text-neutral-900">
-                  Frameworks Detected
-                </h2>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                {feedback.framework_detected && (
-                  <div className="border border-neutral-900 bg-neutral-900 text-white p-4 cursor-default w-full sm:w-auto flex-1 min-w-[240px]">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-sm tracking-wide">
-                        {feedback.framework_detected}
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="#E8302A">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <p className="text-xs text-neutral-400 font-mono">
-                      Detected structural alignment in your speech.
-                    </p>
-                  </div>
-                )}
-                {feedback.framework_suggested &&
-                  feedback.framework_suggested !== feedback.framework_detected && (
-                    <div className="border border-neutral-200 text-neutral-400 p-4 cursor-default w-full sm:w-auto flex-1 min-w-[240px] opacity-60">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-sm tracking-wide">
-                          {feedback.framework_suggested}
-                        </span>
-                        <span className="text-[10px] border border-neutral-200 px-1 font-mono">
-                          TRY NEXT
-                        </span>
-                      </div>
-                      <p className="text-xs font-mono">
-                        Suggested for next session.
-                      </p>
-                    </div>
-                  )}
+          {/* Framework detected — compact inline tag */}
+          {feedback.framework_detected && (
+            <div className="py-6 border-t border-neutral-100">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                  Framework used
+                </span>
+                <div className="inline-flex items-center gap-2 border border-neutral-900 bg-neutral-900 text-white px-3 py-1.5">
+                  <span className="font-bold text-sm tracking-wide">
+                    {feedback.framework_detected}
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="#E8302A">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
               </div>
             </div>
           )}
@@ -318,14 +292,36 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
               </ul>
             </div>
 
-            {/* Improvement callout */}
-            <div className="border-l-2 border-neutral-200 pl-4 py-2">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 block mb-2">
-                Focus next time
-              </span>
-              <p className="text-sm text-neutral-600 leading-relaxed">
+            {/* Focus next time — prominent callout */}
+            <div className="border border-neutral-900 bg-neutral-50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-[#E8302A]" />
+                <span className="font-mono text-xs uppercase tracking-wider text-neutral-900 font-medium">
+                  Focus next time
+                </span>
+              </div>
+              <p className="text-base text-neutral-800 leading-relaxed">
                 {feedback.improvement}
               </p>
+              {feedback.framework_suggested &&
+                feedback.framework_suggested !== feedback.framework_detected && (
+                  <div className="mt-4 pt-4 border-t border-neutral-200">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 block mb-2">
+                      Try this framework
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold tracking-wide text-neutral-900">
+                        {feedback.framework_suggested}
+                      </span>
+                      <Link
+                        to={ROUTES.methodology}
+                        className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
+                      >
+                        Learn more
+                      </Link>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
 
