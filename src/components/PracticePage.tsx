@@ -5,7 +5,7 @@ import { PromptCard } from "@/components/PromptCard";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPromptByCategory, getRandomPrompt } from "@/lib/prompts";
+import { getRandomPromptByCategories, getRandomPrompt } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
@@ -111,10 +111,10 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
 
   // Countdown state
   const [countdown, setCountdown] = useState<number | null>(null);
-  const countdownCategoryRef = useRef<string | undefined>();
+  const countdownCategoryRef = useRef<string[] | undefined>();
 
-  const handleReady = useCallback((category?: string) => {
-    countdownCategoryRef.current = category;
+  const handleReady = useCallback((categories?: string[]) => {
+    countdownCategoryRef.current = categories;
     setCountdown(3);
     setPhase("countdown");
   }, []);
@@ -123,7 +123,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   useEffect(() => {
     if (phase !== "countdown" || countdown === null) return;
     if (countdown === 0) {
-      const prompt = getRandomPromptByCategory(countdownCategoryRef.current);
+      const prompt = getRandomPromptByCategories(countdownCategoryRef.current);
       setCurrentPrompt(prompt);
       setPhase("prep");
       setCountdown(null);

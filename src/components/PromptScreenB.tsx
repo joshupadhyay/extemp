@@ -6,17 +6,19 @@ import type { Settings } from "@/lib/types";
 const CATEGORIES = [
   { key: "all", label: "All Topics" },
   { key: "opinion", label: "Opinion" },
-  { key: "policy", label: "Policy" },
-  { key: "hypothetical", label: "Behavioral" },
-  { key: "current-events", label: "Current Events" },
+  { key: "hypothetical", label: "Hypothetical" },
+  { key: "philosophical", label: "Philosophical" },
+  { key: "professional", label: "Professional" },
+  { key: "networking", label: "Networking" },
+  { key: "leadership", label: "Leadership" },
 ] as const;
 
-type CategoryFilter = (typeof CATEGORIES)[number]["key"];
+const NON_ALL_KEYS = CATEGORIES.filter((c) => c.key !== "all").map((c) => c.key);
 
 interface PromptScreenBProps {
   settings: Settings;
   setSettings: (settings: Settings) => void;
-  onReady: (category?: string) => void;
+  onReady: (categories?: string[]) => void;
 }
 
 const PREP_OPTIONS = [
@@ -34,12 +36,44 @@ export function PromptScreenB({
   setSettings,
   onReady,
 }: PromptScreenBProps) {
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(["all"]));
+
+  const toggleCategory = useCallback((key: string) => {
+    setSelectedCategories((prev) => {
+      if (key === "all") {
+        return new Set(["all"]);
+      }
+
+      const next = new Set(prev);
+      next.delete("all");
+
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+
+      // If empty, revert to "all"
+      if (next.size === 0) {
+        return new Set(["all"]);
+      }
+
+      // If all non-"all" categories selected, switch to "all"
+      if (NON_ALL_KEYS.every((k) => next.has(k))) {
+        return new Set(["all"]);
+      }
+
+      return next;
+    });
+  }, []);
 
   const handleReady = useCallback(() => {
-    const cat = activeCategory === "all" ? undefined : activeCategory;
-    onReady(cat);
-  }, [activeCategory, onReady]);
+    if (selectedCategories.has("all")) {
+      onReady(undefined);
+    } else {
+      onReady(Array.from(selectedCategories));
+    }
+  }, [selectedCategories, onReady]);
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
@@ -55,9 +89,9 @@ export function PromptScreenB({
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
+              onClick={() => toggleCategory(cat.key)}
               className={`font-mono text-[0.7rem] uppercase tracking-[0.1em] px-3 py-2 border transition-colors duration-200 ease-out cursor-pointer ${
-                activeCategory === cat.key
+                selectedCategories.has(cat.key)
                   ? "border-foreground bg-foreground text-background"
                   : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
               }`}
