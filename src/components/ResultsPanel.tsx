@@ -335,7 +335,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-2 bg-neutral-300" />
                 <h2 className="text-sm font-mono uppercase tracking-wider text-neutral-900">
-                  Confidence Killers
+                  Filler Words
                   <span className="ml-2 text-neutral-400 normal-case">
                     ({fillerWords.count} filler word{fillerWords.count !== 1 ? "s" : ""})
                   </span>
