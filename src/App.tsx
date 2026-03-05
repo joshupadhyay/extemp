@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { Mic, ArrowLeft, LogOut, Clock } from "lucide-react";
 import { AsciiWaveform } from "./components/AsciiWaveform";
@@ -94,19 +94,32 @@ function HomePage({
 }) {
   const navigate = useNavigate();
 
-  const userStats = useMemo(() => {
-    const sessions = loadSessions();
-    const totalWords = sessions.reduce((sum, s) => {
-      const words = s.feedbackData?.transcript?.split(/\s+/).filter(Boolean).length ?? 0;
-      return sum + words;
-    }, 0);
-    const joined = user.createdAt
-      ? new Date(user.createdAt)
-      : sessions.length > 0
-        ? new Date(sessions[sessions.length - 1]!.date)
-        : new Date();
+  const [userStats, setUserStats] = useState({ wordsSpoken: 0, dialogues: 0, dateJoined: "" });
+
+  useEffect(() => {
+    const joined = user.createdAt ? new Date(user.createdAt) : new Date();
     const joinedStr = `${String(joined.getMonth() + 1).padStart(2, "0")}-${String(joined.getFullYear()).slice(2)}`;
-    return { wordsSpoken: totalWords, dialogues: sessions.length, dateJoined: joinedStr };
+
+    // Local sessions as baseline
+    const sessions = loadSessions();
+    const localWords = sessions.reduce((sum, s) => {
+      return sum + (s.feedbackData?.transcript?.split(/\s+/).filter(Boolean).length ?? 0);
+    }, 0);
+    setUserStats({ wordsSpoken: localWords, dialogues: sessions.length, dateJoined: joinedStr });
+
+    // Remote stats override (server has the authoritative count)
+    fetch("/api/user-stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setUserStats((prev) => ({
+            ...prev,
+            wordsSpoken: Math.max(data.wordsSpoken, localWords),
+            dialogues: Math.max(data.dialogues, sessions.length),
+          }));
+        }
+      })
+      .catch(() => {});
   }, [user.createdAt]);
 
   return (
