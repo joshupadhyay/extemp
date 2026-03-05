@@ -47,7 +47,7 @@ export type PracticePhase =
 
 export interface Prompt {
   text: string;
-  category: "opinion" | "hypothetical" | "philosophical" | "professional" | "networking" | "leadership";
+  category: "opinion" | "hypothetical" | "philosophical" | "interviews" | "leadership";
   suggestedFramework?: string;
   difficulty?: "easy" | "medium" | "hard";
 }

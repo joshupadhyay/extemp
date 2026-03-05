@@ -8,8 +8,7 @@ const CATEGORIES = [
   { key: "opinion", label: "Opinion" },
   { key: "hypothetical", label: "Hypothetical" },
   { key: "philosophical", label: "Philosophical" },
-  { key: "professional", label: "Professional" },
-  { key: "networking", label: "Networking" },
+  { key: "interviews", label: "Interviews" },
   { key: "leadership", label: "Leadership" },
 ] as const;
 

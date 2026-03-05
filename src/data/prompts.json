@@ -151,94 +151,76 @@
       "difficulty": "medium"
     },
     {
-      "text": "Describe a time you had to make a difficult decision with incomplete information. How did you approach it?",
-      "category": "professional",
-      "suggestedFramework": "STAR",
-      "difficulty": "medium"
-    },
-    {
-      "text": "How do you approach giving constructive feedback to someone who is resistant to hearing it?",
-      "category": "professional",
-      "suggestedFramework": "STAR",
-      "difficulty": "medium"
-    },
-    {
-      "text": "How would you rebuild trust within a team after a significant failure or setback?",
-      "category": "professional",
-      "suggestedFramework": "STAR",
-      "difficulty": "hard"
-    },
-    {
-      "text": "How do you decide when to advocate for your own idea versus supporting someone else's approach?",
-      "category": "professional",
-      "suggestedFramework": "STAR",
-      "difficulty": "medium"
-    },
-    {
-      "text": "How would you handle a situation where your team disagrees with a decision made by leadership?",
-      "category": "professional",
-      "suggestedFramework": "STAR",
-      "difficulty": "medium"
-    },
-    {
       "text": "Tell me about yourself.",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "Past-Present-Future",
       "difficulty": "easy"
     },
     {
       "text": "Why should we hire you?",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "ADD",
       "difficulty": "medium"
     },
     {
       "text": "What is your greatest weakness?",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "PREP",
       "difficulty": "medium"
     },
     {
       "text": "Where do you see yourself in five years?",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "Past-Present-Future",
       "difficulty": "easy"
     },
     {
       "text": "Tell me about a time you failed and what you learned from it.",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "STAR",
       "difficulty": "medium"
     },
     {
       "text": "Describe a time you worked in a team to solve a difficult problem.",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "STAR",
       "difficulty": "medium"
     },
     {
       "text": "Tell me about a time you overcame a significant challenge.",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "STAR",
       "difficulty": "medium"
     },
     {
       "text": "Describe a conflict you had with a coworker and how you resolved it.",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "STAR",
       "difficulty": "hard"
     },
     {
       "text": "What do you do?",
-      "category": "networking",
+      "category": "interviews",
       "suggestedFramework": "ADD",
       "difficulty": "easy"
     },
     {
-      "text": "What are you working on right now?",
-      "category": "networking",
-      "suggestedFramework": "ADD",
-      "difficulty": "easy"
+      "text": "How do you approach giving constructive feedback to someone who is resistant to hearing it?",
+      "category": "interviews",
+      "suggestedFramework": "STAR",
+      "difficulty": "medium"
+    },
+    {
+      "text": "How do you decide when to advocate for your own idea versus supporting someone else's approach?",
+      "category": "interviews",
+      "suggestedFramework": "STAR",
+      "difficulty": "medium"
+    },
+    {
+      "text": "How would you handle a situation where your team disagrees with a decision made by leadership?",
+      "category": "interviews",
+      "suggestedFramework": "STAR",
+      "difficulty": "medium"
     },
     {
       "text": "How do you lead a team through a period of significant uncertainty or ambiguity?",

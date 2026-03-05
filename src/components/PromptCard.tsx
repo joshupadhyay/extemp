@@ -5,8 +5,7 @@ const categoryLabels: Record<Prompt["category"], string> = {
   opinion: "Opinion",
   hypothetical: "Hypothetical",
   philosophical: "Philosophical",
-  professional: "Professional",
-  networking: "Networking",
+  interviews: "Interviews",
   leadership: "Leadership",
 };
 
@@ -14,8 +13,7 @@ const categoryColors: Record<Prompt["category"], string> = {
   opinion: "bg-blue-100 text-blue-900",
   hypothetical: "bg-purple-100 text-purple-900",
   philosophical: "bg-rose-100 text-rose-900",
-  professional: "bg-cyan-100 text-cyan-900",
-  networking: "bg-indigo-100 text-indigo-900",
+  interviews: "bg-cyan-100 text-cyan-900",
   leadership: "bg-orange-100 text-orange-900",
 };
 
