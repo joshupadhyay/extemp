@@ -81,6 +81,10 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
   const fillerWords: FillerWordsResult | null = transcription?.filler_words ?? null;
   const highlightedTranscript: string | null = transcription?.highlighted_transcript ?? null;
+  const durationSec = transcription?.duration ?? null;
+  const durationStr = durationSec != null
+    ? `${String(Math.floor(durationSec / 60)).padStart(2, "0")}:${String(Math.floor(durationSec % 60)).padStart(2, "0")}`
+    : "--:--";
   const dateStr = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -129,7 +133,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
           <div className="grid grid-cols-3 gap-4 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
             <div>
               <span className="block text-neutral-300 mb-1">Duration</span>
-              <span className="text-neutral-900">--:--</span>
+              <span className="text-neutral-900">{durationStr}</span>
             </div>
             <div className="text-center">
               <span className="block text-neutral-300 mb-1">Word Count</span>
@@ -159,7 +163,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
         <div className="lg:hidden w-full bg-neutral-50/30 border-b border-neutral-100 flex flex-col items-center pt-4 pb-4 px-4">
           <div className="flex items-center gap-6 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
             <div className="flex flex-col items-center">
-              <span className="text-neutral-900 font-bold">--:--</span>
+              <span className="text-neutral-900 font-bold">{durationStr}</span>
               <span>Duration</span>
             </div>
             <div className="h-8 w-px bg-neutral-300" />
@@ -193,7 +197,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
               </p>
               <Link
                 to={ROUTES.methodology}
-                className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
+                className="font-mono text-xs uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
               >
                 How is this calculated?
               </Link>
