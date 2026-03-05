@@ -40,6 +40,7 @@ export type PracticePhase =
   | "idle"
   | "prompt"
   | "countdown"
+  | "select"
   | "prep"
   | "speaking"
   | "processing"

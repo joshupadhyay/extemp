@@ -1,3 +1,5 @@
+import { waitUntil } from "@vercel/functions";
+import { pool } from "./_lib/db.js";
 import type { Feedback, FeedbackData } from "./_lib/types.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -103,6 +105,40 @@ ${transcript}`;
   return feedback;
 }
 
+async function processEvaluation(jobId: string, input: EvaluateRequest) {
+  try {
+    await pool.query(
+      "UPDATE job SET status = 'processing', updated_at = now() WHERE id = $1",
+      [jobId],
+    );
+
+    let feedback: Feedback;
+    try {
+      feedback = await callOpenRouter(PRIMARY_MODEL, input.transcript, input.prompt, input.prep_time, input.speaking_time);
+    } catch (primaryError) {
+      console.error(`Primary model (${PRIMARY_MODEL}) failed:`, primaryError);
+      feedback = await callOpenRouter(FALLBACK_MODEL, input.transcript, input.prompt, input.prep_time, input.speaking_time);
+    }
+
+    const result: FeedbackData = {
+      transcript: input.transcript,
+      feedback,
+    };
+
+    await pool.query(
+      "UPDATE job SET status = 'completed', result = $2, updated_at = now() WHERE id = $1",
+      [jobId, JSON.stringify(result)],
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Evaluate job failed:", message);
+    await pool.query(
+      "UPDATE job SET status = 'failed', error = $2, updated_at = now() WHERE id = $1",
+      [jobId, message],
+    ).catch(() => {});
+  }
+}
+
 export async function POST(req: Request): Promise<Response> {
   if (!OPENROUTER_API_KEY) {
     return Response.json(
@@ -143,26 +179,22 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
-    let feedback: Feedback;
-    try {
-      feedback = await callOpenRouter(PRIMARY_MODEL, transcript, prompt, prep_time, speaking_time);
-    } catch (primaryError) {
-      console.error(`Primary model (${PRIMARY_MODEL}) failed:`, primaryError);
-      console.log(`Falling back to ${FALLBACK_MODEL}...`);
-      feedback = await callOpenRouter(FALLBACK_MODEL, transcript, prompt, prep_time, speaking_time);
-    }
+    // Create job record
+    const result = await pool.query(
+      "INSERT INTO job (type, status, input) VALUES ('evaluate', 'pending', $1) RETURNING id",
+      [JSON.stringify({ prompt, prep_time, speaking_time, transcript_length: transcript.length })],
+    );
+    const jobId = result.rows[0].id;
 
-    const result: FeedbackData = {
-      transcript,
-      feedback,
-    };
+    // Process in background
+    waitUntil(processEvaluation(jobId, body));
 
-    return Response.json(result);
+    return Response.json({ jobId }, { status: 202 });
   } catch (err) {
     console.error("Evaluate error:", err);
     return Response.json(
-      { error: "Failed to generate feedback. Both models failed." },
-      { status: 502 },
+      { error: "Failed to start evaluation job." },
+      { status: 500 },
     );
   }
 }

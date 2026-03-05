@@ -16,6 +16,30 @@ interface ChunkSession {
 
 const chunkSessions = new Map<string, ChunkSession>();
 
+// --- In-memory job store (local dev only — Vercel uses Supabase) ---
+interface Job {
+  id: string;
+  type: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  result?: any;
+  error?: string;
+  created_at: string;
+  updated_at: string;
+}
+const jobs = new Map<string, Job>();
+
+function createJob(type: string): Job {
+  const job: Job = {
+    id: crypto.randomUUID(),
+    type,
+    status: "pending",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  jobs.set(job.id, job);
+  return job;
+}
+
 // Purge sessions older than 10 minutes every 5 minutes
 setInterval(() => {
   const cutoff = Date.now() - 10 * 60 * 1000;
@@ -34,6 +58,15 @@ const server = serve({
     // Dialogue endpoints
     "/api/dialogues": (req) => handleDialogues(req),
     "/api/dialogues/:id": (req) => handleDialogueById(req, req.params.id),
+
+    // Job polling endpoint (local dev)
+    "/api/jobs/:id": {
+      GET(req) {
+        const job = jobs.get(req.params.id);
+        if (!job) return Response.json({ error: "Job not found" }, { status: 404 });
+        return Response.json(job);
+      },
+    },
 
     // Serve index.html for all unmatched routes.
     "/*": index,
@@ -62,7 +95,44 @@ const server = serve({
 
     "/api/evaluate": {
       async POST(req) {
-        return handleEvaluate(req);
+        // Create a job, process in background, return jobId
+        const job = createJob("evaluate");
+        const jobId = job.id;
+
+        // Clone the request body before returning
+        const body = await req.json();
+
+        (async () => {
+          try {
+            job.status = "processing";
+            job.updated_at = new Date().toISOString();
+
+            // Re-create a request with the cloned body for handleEvaluate
+            const innerReq = new Request(req.url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+
+            const res = await handleEvaluate(innerReq);
+            const result = await res.json();
+
+            if (res.status >= 400) {
+              job.status = "failed";
+              job.error = result.error || `Evaluate returned ${res.status}`;
+            } else {
+              job.status = "completed";
+              job.result = result;
+            }
+            job.updated_at = new Date().toISOString();
+          } catch (err) {
+            job.status = "failed";
+            job.error = err instanceof Error ? err.message : "Unknown error";
+            job.updated_at = new Date().toISOString();
+          }
+        })();
+
+        return Response.json({ jobId }, { status: 202 });
       },
     },
 
@@ -78,6 +148,25 @@ const server = serve({
       },
     },
 
+    "/api/prewarm": {
+      async POST() {
+        if (!MODAL_ENDPOINT_URL) {
+          return Response.json({ ok: false, reason: "no endpoint configured" });
+        }
+        try {
+          const res = await fetch(MODAL_ENDPOINT_URL, {
+            method: "POST",
+            headers: { "X-Prewarm": "1" },
+            body: new FormData(),
+            signal: AbortSignal.timeout(8000),
+          });
+          return Response.json({ ok: true, status: res.status });
+        } catch {
+          return Response.json({ ok: false, reason: "prewarm fetch failed" });
+        }
+      },
+    },
+
     "/api/transcribe": {
       async POST(req) {
         if (!MODAL_ENDPOINT_URL) {
@@ -88,7 +177,6 @@ const server = serve({
         }
 
         try {
-          // Forward the FormData directly to Modal
           const formData = await req.formData();
           const audioFile = formData.get("file");
           if (!audioFile || !(audioFile instanceof File)) {
@@ -98,36 +186,60 @@ const server = serve({
             );
           }
 
-          // Save a local copy for testing/debugging (dev only)
-          if (process.env.NODE_ENV !== "production") {
+          // Create job and return immediately
+          const job = createJob("transcribe");
+          const jobId = job.id;
+
+          // Process in background (Bun has no timeout issues)
+          (async () => {
             try {
-              const ext = audioFile.name?.split(".").pop() || "webm";
-              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-              const localPath = `./recordings/recording-${timestamp}.${ext}`;
-              await Bun.write(localPath, audioFile);
-              console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
-            } catch (e) {
-              console.warn("Failed to save local audio copy:", e);
+              job.status = "processing";
+              job.updated_at = new Date().toISOString();
+
+              // Save a local copy for testing/debugging (dev only)
+              if (process.env.NODE_ENV !== "production") {
+                try {
+                  const ext = audioFile.name?.split(".").pop() || "webm";
+                  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                  const localPath = `./recordings/recording-${timestamp}.${ext}`;
+                  await Bun.write(localPath, audioFile);
+                  console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
+                } catch (e) {
+                  console.warn("Failed to save local audio copy:", e);
+                }
+              }
+
+              const modalForm = new FormData();
+              modalForm.append("file", audioFile, audioFile.name || "recording.webm");
+
+              const modalRes = await fetch(MODAL_ENDPOINT_URL!, {
+                method: "POST",
+                body: modalForm,
+              });
+
+              const body = await modalRes.json();
+
+              if (!modalRes.ok) {
+                job.status = "failed";
+                job.error = body.error || `Modal returned ${modalRes.status}`;
+              } else {
+                job.status = "completed";
+                job.result = body;
+              }
+              job.updated_at = new Date().toISOString();
+            } catch (err) {
+              job.status = "failed";
+              job.error = err instanceof Error ? err.message : "Unknown error";
+              job.updated_at = new Date().toISOString();
             }
-          }
+          })();
 
-          // Build new FormData for the Modal endpoint
-          const modalForm = new FormData();
-          modalForm.append("file", audioFile, audioFile.name || "recording.webm");
-
-          const modalRes = await fetch(MODAL_ENDPOINT_URL, {
-            method: "POST",
-            body: modalForm,
-          });
-
-          const body = await modalRes.json();
-
-          return Response.json(body, { status: modalRes.status });
+          return Response.json({ jobId }, { status: 202 });
         } catch (err) {
           console.error("Transcribe proxy error:", err);
           return Response.json(
-            { error: "Failed to reach transcription service." },
-            { status: 502 },
+            { error: "Failed to start transcription job." },
+            { status: 500 },
           );
         }
       },

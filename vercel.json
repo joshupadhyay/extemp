@@ -7,6 +7,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/auth/:path*", "destination": "/api/auth/[...all]" },
+    { "source": "/api/jobs/:id", "destination": "/api/jobs/[id]" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

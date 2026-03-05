@@ -1,4 +1,45 @@
+import { waitUntil } from "@vercel/functions";
+import { pool } from "./_lib/db.js";
+
 const MODAL_ENDPOINT_URL = process.env.MODAL_ENDPOINT_URL;
+
+async function processTranscription(jobId: string, audioBlob: Blob, fileName: string) {
+  try {
+    await pool.query(
+      "UPDATE job SET status = 'processing', updated_at = now() WHERE id = $1",
+      [jobId],
+    );
+
+    const modalForm = new FormData();
+    modalForm.append("file", audioBlob, fileName);
+
+    const modalRes = await fetch(MODAL_ENDPOINT_URL!, {
+      method: "POST",
+      body: modalForm,
+    });
+
+    const body = await modalRes.json();
+
+    if (!modalRes.ok) {
+      await pool.query(
+        "UPDATE job SET status = 'failed', error = $2, updated_at = now() WHERE id = $1",
+        [jobId, body.error || `Modal returned ${modalRes.status}`],
+      );
+      return;
+    }
+
+    await pool.query(
+      "UPDATE job SET status = 'completed', result = $2, updated_at = now() WHERE id = $1",
+      [jobId, JSON.stringify(body)],
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await pool.query(
+      "UPDATE job SET status = 'failed', error = $2, updated_at = now() WHERE id = $1",
+      [jobId, message],
+    ).catch(() => {}); // Don't throw in cleanup
+  }
+}
 
 export async function POST(req: Request): Promise<Response> {
   if (!MODAL_ENDPOINT_URL) {
@@ -20,23 +61,27 @@ export async function POST(req: Request): Promise<Response> {
 
     const audioFile = entry as File;
 
-    // Build new FormData for the Modal endpoint
-    const modalForm = new FormData();
-    modalForm.append("file", audioFile, (audioFile as any).name || "recording.webm");
+    // Read the file into memory before returning (can't read stream after response)
+    const arrayBuffer = await audioFile.arrayBuffer();
+    const blob = new Blob([arrayBuffer], { type: audioFile.type });
+    const fileName = (audioFile as any).name || "recording.webm";
 
-    const modalRes = await fetch(MODAL_ENDPOINT_URL, {
-      method: "POST",
-      body: modalForm,
-    });
+    // Create job record
+    const result = await pool.query(
+      "INSERT INTO job (type, status, input) VALUES ('transcribe', 'pending', $1) RETURNING id",
+      [JSON.stringify({ fileName, size: blob.size })],
+    );
+    const jobId = result.rows[0].id;
 
-    const body = await modalRes.json();
+    // Process in background — survives after response is sent
+    waitUntil(processTranscription(jobId, blob, fileName));
 
-    return Response.json(body, { status: modalRes.status });
+    return Response.json({ jobId }, { status: 202 });
   } catch (err) {
-    console.error("Transcribe proxy error:", err);
+    console.error("Transcribe error:", err);
     return Response.json(
-      { error: "Failed to reach transcription service." },
-      { status: 502 },
+      { error: "Failed to start transcription job." },
+      { status: 500 },
     );
   }
 }

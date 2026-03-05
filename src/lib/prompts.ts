@@ -20,4 +20,15 @@ export function getRandomPromptByCategory(category?: string): Prompt {
   return getRandomPromptByCategories([category]);
 }
 
+export function getTwoRandomPrompts(categories?: string[]): [Prompt, Prompt] {
+  const pool = categories && categories.length > 0
+    ? prompts.filter((p) => categories.includes(p.category))
+    : prompts;
+  const source = pool.length >= 2 ? pool : prompts;
+  const i = Math.floor(Math.random() * source.length);
+  let j = Math.floor(Math.random() * (source.length - 1));
+  if (j >= i) j++;
+  return [source[i]!, source[j]!];
+}
+
 export { prompts };

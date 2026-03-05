@@ -5,11 +5,11 @@ import { PromptCard } from "@/components/PromptCard";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { getRandomPromptByCategories, getRandomPrompt } from "@/lib/prompts";
+import { getRandomPromptByCategories, getRandomPrompt, getTwoRandomPrompts } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
 import { saveSession } from "@/lib/storage";
 import type { PracticePhase, Prompt, FeedbackData, TranscriptionResult, Settings, SpeechSession } from "@/lib/types";
-import { Square } from "lucide-react";
+import { Square, ArrowRight } from "lucide-react";
 import { AsciiWaveform } from "@/components/AsciiWaveform";
 
 import { PromptScreenB } from "@/components/PromptScreenB";
@@ -17,26 +17,6 @@ import { PromptScreenB } from "@/components/PromptScreenB";
 interface PracticePageProps {
   settings: Settings;
   setSettings?: React.Dispatch<React.SetStateAction<Settings>>;
-}
-
-/** Send audio blob to the Bun server proxy which forwards to Modal (fallback path). */
-async function transcribeAudio(blob: Blob): Promise<TranscriptionResult> {
-  const formData = new FormData();
-  const ext = blob.type.includes("mp4") ? ".mp4" : ".webm";
-  formData.append("file", blob, `recording${ext}`);
-
-  const res = await fetch("/api/transcribe", {
-    method: "POST",
-    body: formData,
-  });
-
-  const body = await res.json();
-
-  if (!res.ok) {
-    throw new Error(body.error || "Transcription failed");
-  }
-
-  return body as TranscriptionResult;
 }
 
 /** Upload a single audio chunk to the server during recording. */
@@ -54,26 +34,60 @@ async function uploadChunk(sessionId: string, chunk: Blob, index: number): Promi
   }
 }
 
+/** Poll a job until it completes or fails. */
+async function pollJob<T>(jobId: string, interval = 2000, maxWait = 120000): Promise<T> {
+  const start = Date.now();
+  while (Date.now() - start < maxWait) {
+    const res = await fetch(`/api/jobs/${jobId}`);
+    if (!res.ok) throw new Error(`Job poll failed: ${res.status}`);
+    const job = await res.json();
+    if (job.status === "completed") return job.result as T;
+    if (job.status === "failed") throw new Error(job.error || "Job failed");
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  throw new Error("Job timed out");
+}
+
+/** Submit audio for transcription and return the job ID. */
+async function startTranscription(blob: Blob): Promise<string> {
+  const formData = new FormData();
+  const ext = blob.type.includes("mp4") ? ".mp4" : ".webm";
+  formData.append("file", blob, `recording${ext}`);
+  const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "Failed to start transcription");
+  return body.jobId;
+}
+
+/** Submit transcript for evaluation and return the job ID. */
+async function startEvaluation(transcript: string, prompt: string, prepTime: number, speakingTime: number): Promise<string> {
+  const res = await fetch("/api/evaluate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcript, prompt, prep_time: prepTime, speaking_time: speakingTime }),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "Failed to start evaluation");
+  return body.jobId;
+}
+
 /** Tell the server to assemble chunks and forward to Modal for transcription. */
-async function finalizeTranscription(sessionId: string, mimeType: string): Promise<TranscriptionResult> {
+async function finalizeTranscription(sessionId: string, mimeType: string): Promise<string> {
   const res = await fetch(`/api/audio-chunks/${sessionId}/finalize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mimeType }),
   });
-
   const body = await res.json();
-
-  if (!res.ok) {
-    throw new Error(body.error || "Finalize failed");
-  }
-
-  return body as TranscriptionResult;
+  if (!res.ok) throw new Error(body.error || "Finalize failed");
+  // If the finalize endpoint returns a jobId, use it; otherwise return inline result
+  return body.jobId ?? body;
 }
 
 export function PracticePage({ settings, setSettings }: PracticePageProps) {
   const [phase, setPhase] = useState<PracticePhase>("prompt");
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
+  const [promptChoices, setPromptChoices] = useState<[Prompt, Prompt] | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
   const [processingStatus, setProcessingStatus] = useState("");
   const [processingSubstatus, setProcessingSubstatus] = useState<string | undefined>();
@@ -104,6 +118,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
 
   const handleStart = useCallback(() => {
     setCurrentPrompt(null);
+    setPromptChoices(null);
     setFeedbackData(null);
     setTranscribeError(null);
     setPhase("prompt");
@@ -123,9 +138,9 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   useEffect(() => {
     if (phase !== "countdown" || countdown === null) return;
     if (countdown === 0) {
-      const prompt = getRandomPromptByCategories(countdownCategoryRef.current);
-      setCurrentPrompt(prompt);
-      setPhase("prep");
+      const choices = getTwoRandomPrompts(countdownCategoryRef.current);
+      setPromptChoices(choices);
+      setPhase("select");
       setCountdown(null);
       return;
     }
@@ -133,10 +148,18 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
     return () => clearTimeout(timer);
   }, [phase, countdown]);
 
+  const handleSelectPrompt = useCallback((prompt: Prompt) => {
+    setCurrentPrompt(prompt);
+    setPromptChoices(null);
+    setPhase("prep");
+  }, []);
+
   const handlePrepComplete = useCallback(async () => {
     try {
       await startRecording();
       setPhase("speaking");
+      // Prewarm Modal so the container is hot when they finish speaking
+      fetch("/api/prewarm", { method: "POST" }).catch(() => {});
     } catch {
       setPhase("prompt");
     }
@@ -150,111 +173,93 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
     setProcessingStatus("Transcribing your speech");
     setTranscribeError(null);
 
-    // Stop recording — waits for pending chunk uploads to settle
-    let audioBlob: Blob | null = null;
-    let sid = "";
-    let allChunksUploaded = false;
     try {
-      const result = await stopRecording();
-      audioBlob = result.blob;
-      sid = result.sessionId;
-      allChunksUploaded = result.allChunksUploaded;
-    } catch {
-      // If stop fails we have no audio — fall through to mock
-    }
-
-    let transcript: string;
-    let transcriptionResult: TranscriptionResult | undefined;
-
-    if (audioBlob && audioBlob.size > 0) {
+      // Stop recording — waits for pending chunk uploads to settle
+      let audioBlob: Blob | null = null;
       try {
-        if (allChunksUploaded) {
-          // Progressive path: chunks already on server, just finalize
+        const result = await stopRecording();
+        audioBlob = result.blob;
+      } catch {
+        // If stop fails we have no audio — fall through to mock
+      }
+
+      let transcript: string;
+      let transcriptionResult: TranscriptionResult | undefined;
+
+      if (audioBlob && audioBlob.size > 0) {
+        try {
+          setProcessingSubstatus("Uploading audio");
+          const jobId = await startTranscription(audioBlob);
           setProcessingSubstatus("Waiting for Whisper");
-          transcriptionResult = await finalizeTranscription(sid, audioBlob.type);
-        } else {
-          // Fallback: upload entire blob as before
-          setProcessingSubstatus("Uploading audio to Whisper");
-          transcriptionResult = await transcribeAudio(audioBlob);
+          transcriptionResult = await pollJob<TranscriptionResult>(jobId);
+          transcript = transcriptionResult.transcript;
+        } catch (err) {
+          console.error("Transcription failed, using mock:", err);
+          setTranscribeError(
+            err instanceof Error ? err.message : "Transcription failed",
+          );
+          transcript = mockFeedbackData.transcript;
         }
-        transcript = transcriptionResult.transcript;
-      } catch (err) {
-        // If transcription fails, fall back to mock data
-        console.error("Transcription failed, using mock:", err);
-        setTranscribeError(
-          err instanceof Error ? err.message : "Transcription failed",
-        );
+      } else {
         transcript = mockFeedbackData.transcript;
       }
-    } else {
-      // No audio blob — use mock transcript
-      transcript = mockFeedbackData.transcript;
-    }
 
-    // Phase 2: generate personalized feedback via LLM
-    setProcessingStatus("Analyzing your delivery");
-    setProcessingSubstatus("Generating coaching feedback");
+      // Phase 2: generate personalized feedback via LLM
+      setProcessingStatus("Analyzing your delivery");
+      setProcessingSubstatus("Generating coaching feedback");
 
-    let data: FeedbackData;
-    const prompt = currentPromptRef.current;
+      let data: FeedbackData;
+      const prompt = currentPromptRef.current;
 
-    if (prompt) {
-      try {
-        const evalRes = await fetch("/api/evaluate", {
+      if (prompt) {
+        try {
+          const evalJobId = await startEvaluation(
+            transcript, prompt.text, settings.prepTime, settings.speakingTime,
+          );
+          setProcessingSubstatus("Waiting for AI coach");
+          data = await pollJob<FeedbackData>(evalJobId);
+          data.transcription = transcriptionResult;
+        } catch (err) {
+          console.error("Evaluation failed, falling back to mock:", err);
+          data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+        }
+      } else {
+        data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+      }
+
+      setFeedbackData(data);
+
+      // Save session
+      if (prompt) {
+        const session: SpeechSession = {
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          prompt: prompt.text,
+          promptCategory: prompt.category,
+          feedbackData: data,
+        };
+        saveSession(session);
+
+        // Save to Supabase (non-blocking)
+        fetch("/api/dialogues", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            transcript,
-            prompt: prompt.text,
+            prompt_text: prompt.text,
+            prompt_category: prompt.category,
             prep_time: settings.prepTime,
             speaking_time: settings.speakingTime,
+            actual_duration: transcriptionResult?.duration ?? null,
+            transcript: transcriptionResult ?? null,
+            feedback: data.feedback,
+            settings: { prepTime: settings.prepTime, speakingTime: settings.speakingTime },
           }),
-        });
-
-        if (!evalRes.ok) {
-          const errBody = await evalRes.json().catch(() => ({}));
-          throw new Error((errBody as any).error || `Evaluate returned ${evalRes.status}`);
-        }
-
-        data = await evalRes.json() as FeedbackData;
-        // Attach Whisper transcription data (filler words, clarity metrics, etc.)
-        data.transcription = transcriptionResult;
-      } catch (err) {
-        console.error("Evaluation failed, falling back to mock:", err);
-        data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+        }).catch((err) => console.error("Supabase save failed:", err));
       }
-    } else {
-      data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
-    }
-
-    setFeedbackData(data);
-
-    // Save session
-    if (prompt) {
-      const session: SpeechSession = {
-        id: crypto.randomUUID(),
-        date: new Date().toISOString(),
-        prompt: prompt.text,
-        promptCategory: prompt.category,
-        feedbackData: data,
-      };
-      saveSession(session);
-
-      // Save to Supabase (non-blocking)
-      fetch("/api/dialogues", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt_text: prompt.text,
-          prompt_category: prompt.category,
-          prep_time: settings.prepTime,
-          speaking_time: settings.speakingTime,
-          actual_duration: transcriptionResult?.duration ?? null,
-          transcript: transcriptionResult ?? null,
-          feedback: data.feedback,
-          settings: { prepTime: settings.prepTime, speakingTime: settings.speakingTime },
-        }),
-      }).catch((err) => console.error("Supabase save failed:", err));
+    } catch (err) {
+      // Catch-all: if anything unexpected throws, still show results with mock
+      console.error("Unexpected error in handleSpeakingComplete:", err);
+      setFeedbackData(mockFeedbackData);
     }
 
     setPhase("results");
@@ -288,6 +293,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   const handleReset = useCallback(() => {
     setPhase("prompt");
     setCurrentPrompt(null);
+    setPromptChoices(null);
     setFeedbackData(null);
     setProcessingStatus("");
     setProcessingSubstatus(undefined);
@@ -302,6 +308,9 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
 
     if (target === "idle") {
       handleReset();
+    } else if (target === "select") {
+      setPromptChoices(getTwoRandomPrompts());
+      setPhase("select");
     } else if (target === "processing") {
       setProcessingStatus("Transcribing your speech");
       setProcessingSubstatus("Sending audio to Whisper");
@@ -334,6 +343,31 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
         </div>
       )}
 
+      {/* Prompt selection phase */}
+      {phase === "select" && promptChoices && (
+        <div className="phase-in flex flex-col items-center gap-6 w-full">
+          <span className="font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">
+            Choose Your Prompt
+          </span>
+          <div className="flex flex-col gap-4 w-full">
+            {promptChoices.map((prompt, i) => (
+              <button
+                key={i}
+                onClick={() => handleSelectPrompt(prompt)}
+                className="w-full text-left border border-border p-6 transition-colors duration-200 ease-out hover:border-foreground hover:bg-foreground/[0.03] cursor-pointer group"
+              >
+                <span className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-muted-foreground group-hover:text-foreground/60 transition-colors">
+                  {prompt.category}
+                </span>
+                <p className="text-lg font-medium leading-snug mt-2 text-foreground">
+                  {prompt.text}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Prep phase */}
       {phase === "prep" && currentPrompt && (
         <div className="phase-in flex flex-col items-center gap-6 w-full">
@@ -347,12 +381,36 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
           <p className="text-sm text-muted-foreground text-center">
             Organize your thoughts. Recording starts automatically when prep ends.
           </p>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handlePrepComplete}
+            className="w-full h-12 text-base gap-2"
+          >
+            <ArrowRight className="size-4" />
+            I'm Ready
+          </Button>
         </div>
       )}
 
       {/* Speaking phase */}
       {phase === "speaking" && currentPrompt && (
         <div className="fixed inset-0 flex flex-col bg-background" style={{ zIndex: 50 }}>
+          {/* Countdown overlay for final 3 seconds */}
+          {(() => {
+            const remaining = settings.speakingTime - elapsedSeconds;
+            if (remaining >= 1 && remaining <= 3) {
+              return (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm" style={{ zIndex: 60 }}>
+                  <span key={remaining} className="countdown-number font-mono text-[8rem] font-bold tabular-nums leading-none text-foreground">
+                    {remaining}
+                  </span>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Top bar */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -396,6 +454,30 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
               <p className="text-sm mb-2" style={{ color: "var(--cta)" }}>{micError}</p>
             )}
 
+            {/* Time remaining warning */}
+            {(() => {
+              const remaining = settings.speakingTime - elapsedSeconds;
+              if (remaining <= 30 && remaining > 10) {
+                return (
+                  <div className="mb-3 px-3 py-2 border border-foreground/20 bg-foreground/[0.03] phase-in">
+                    <span className="font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">
+                      {remaining} seconds remaining
+                    </span>
+                  </div>
+                );
+              }
+              if (remaining <= 10 && remaining > 3) {
+                return (
+                  <div className="mb-3 px-3 py-2 border phase-in" style={{ borderColor: "var(--cta)", backgroundColor: "color-mix(in srgb, var(--cta) 8%, transparent)" }}>
+                    <span className="font-mono text-xs uppercase tracking-[0.1em] font-semibold" style={{ color: "var(--cta)" }}>
+                      {remaining} seconds remaining
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* Timer + level bars */}
             <div className="flex items-end justify-between mb-4">
               <span className="font-mono text-4xl font-semibold tabular-nums leading-none">
@@ -417,7 +499,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
               className="w-full h-12 text-base gap-2"
             >
               <Square className="size-4 fill-current" />
-              End Session
+              I'm Done
             </Button>
           </div>
 
@@ -464,7 +546,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
         <div className="fixed bottom-4 right-4 bg-neutral-900 text-white p-3 font-mono text-[10px] flex flex-col gap-1.5" style={{ zIndex: 9999 }}>
           <span className="text-neutral-500 uppercase tracking-wider">Debug: {phase}</span>
           <div className="flex flex-wrap gap-1">
-            {(["idle", "prompt", "countdown", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
+            {(["idle", "prompt", "countdown", "select", "prep", "speaking", "processing", "results"] as PracticePhase[]).map((p) => (
               <button
                 key={p}
                 onClick={() => debugSetPhase(p)}
