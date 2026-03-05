@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { loadSessions } from "@/lib/storage";
 import { ROUTES } from "@/lib/routes";
 import type { SpeechSession, DialogueSummary } from "@/lib/types";
-import { ChevronLeft } from "lucide-react";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -65,29 +63,11 @@ export function HistoryPage() {
 
   if (selectedLocal) {
     return (
-      <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto py-8 px-4">
-        <div className="w-full">
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedLocal(null)}
-            className="gap-1"
-          >
-            <ChevronLeft className="size-4" />
-            Back to History
-          </Button>
-        </div>
-        <Card className="bg-card/50 backdrop-blur-sm border-muted w-full">
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">
-              {formatDate(selectedLocal.date)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-medium">{selectedLocal.prompt}</p>
-          </CardContent>
-        </Card>
-        <ResultsPanel data={selectedLocal.feedbackData} />
-      </div>
+      <ResultsPanel
+        data={selectedLocal.feedbackData}
+        onBack={() => setSelectedLocal(null)}
+        onPracticeAgain={() => navigate(ROUTES.practice)}
+      />
     );
   }
 

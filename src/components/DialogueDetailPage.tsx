@@ -56,16 +56,10 @@ export function DialogueDetailPage() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto py-8 px-4">
-      <div className="w-full">
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted-foreground">
-            {detail.prompt_category}
-          </span>
-        </div>
-        <h2 className="text-lg font-medium mb-4">{detail.prompt_text}</h2>
-      </div>
-      <ResultsPanel data={feedbackData} />
-    </div>
+    <ResultsPanel
+      data={feedbackData}
+      onBack={() => navigate(ROUTES.history)}
+      onPracticeAgain={() => navigate(ROUTES.practice)}
+    />
   );
 }

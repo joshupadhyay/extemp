@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FeedbackData, FillerWordsResult } from "@/lib/types";
 
@@ -6,6 +6,7 @@ interface ResultsPanelProps {
   data: FeedbackData;
   onPracticeAgain?: () => void;
   onDone?: () => void;
+  onBack?: () => void;
 }
 
 function sanitizeHighlightedTranscript(html: string): string {
@@ -72,7 +73,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   );
 }
 
-export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProps) {
+export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsPanelProps) {
   const { feedback, transcript, transcription } = data;
   const score = Math.round(feedback.overall_score * 10);
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
@@ -101,8 +102,8 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
 
   return (
     <div className="fixed inset-0 flex flex-col lg:flex-row bg-white text-neutral-900" style={{ zIndex: 50 }}>
-      {/* Left Panel — sidebar on desktop, bottom strip on mobile */}
-      <div className="flex order-last lg:order-first w-full lg:w-3/12 h-auto lg:h-full flex-col justify-between py-8 lg:py-0 p-8 border-t lg:border-t-0 lg:border-r border-neutral-100 bg-neutral-50/20 relative">
+      {/* Left Panel — sidebar on desktop only, hidden on mobile */}
+      <div className="hidden lg:flex w-3/12 h-full flex-col justify-between p-8 border-r border-neutral-100 bg-neutral-50/20 relative">
         {/* Checkmark icon */}
         <div className="absolute top-8 left-8">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -113,7 +114,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
 
         {/* ASCII waveform */}
         <div className="flex-1 flex flex-col items-center justify-center opacity-80">
-          <div className="ascii-art font-mono text-neutral-800 text-[6px] leading-[6px] lg:text-[8px] lg:leading-[8px] overflow-hidden">
+          <div className="ascii-art font-mono text-neutral-800 text-[8px] leading-[8px] overflow-hidden">
             {ASCII_WAVEFORM}
           </div>
           <div className="mt-8 font-mono text-xs text-neutral-400 text-center">
@@ -122,7 +123,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
         </div>
 
         {/* Bottom stats */}
-        <div className="hidden lg:block w-full pt-8 border-t border-neutral-200">
+        <div className="w-full pt-8 border-t border-neutral-200">
           <div className="grid grid-cols-3 gap-4 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
             <div>
               <span className="block text-neutral-300 mb-1">Duration</span>
@@ -141,9 +142,19 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
       </div>
 
       {/* Right Panel */}
-      <div className="order-first lg:order-last w-full lg:w-9/12 min-h-0 lg:h-full flex-1 flex flex-col relative bg-white">
+      <div className="w-full lg:w-9/12 min-h-0 lg:h-full flex-1 flex flex-col relative bg-white">
+        {/* Back button */}
+        {onBack && (
+          <div className="px-4 pt-4 lg:px-8 lg:pt-6">
+            <Button variant="outline" onClick={onBack} className="gap-1 -ml-2 border-neutral-900">
+              <ChevronLeft className="size-4" />
+              Back
+            </Button>
+          </div>
+        )}
+
         {/* Mobile stats banner — shown only on mobile */}
-        <div className="lg:hidden w-full bg-neutral-50/30 border-b border-neutral-100 flex flex-col items-center pt-6 pb-4 px-4">
+        <div className="lg:hidden w-full bg-neutral-50/30 border-b border-neutral-100 flex flex-col items-center pt-4 pb-4 px-4">
           <div className="flex items-center gap-6 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
             <div className="flex flex-col items-center">
               <span className="text-neutral-900 font-bold">--:--</span>
@@ -361,7 +372,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone }: ResultsPanelProp
                 onClick={onPracticeAgain}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 group"
               >
-                <span>Practice Again</span>
+                <span>Another Round?</span>
                 <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             )}
