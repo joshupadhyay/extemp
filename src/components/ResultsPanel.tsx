@@ -1,5 +1,7 @@
 import { ArrowRight, ChevronLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/routes";
 import type { FeedbackData, FillerWordsResult } from "@/lib/types";
 
 interface ResultsPanelProps {
@@ -185,9 +187,17 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
                 {score}<span className="text-3xl text-neutral-300 font-light">/100</span>
               </h1>
             </div>
-            <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#E8302A" }}>
-              Confidence Score
-            </p>
+            <div className="flex items-baseline gap-3">
+              <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#E8302A" }}>
+                Confidence Score
+              </p>
+              <Link
+                to={ROUTES.methodology}
+                className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
+              >
+                How is this calculated?
+              </Link>
+            </div>
             <p className="text-neutral-500 text-sm mt-1">{dateStr}</p>
           </div>
         </div>

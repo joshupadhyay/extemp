@@ -8,6 +8,7 @@ import { PracticePage } from "@/components/PracticePage";
 import { HistoryPage } from "@/components/HistoryPage";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DialogueDetailPage } from "@/components/DialogueDetailPage";
+import { MethodologyPage } from "@/components/MethodologyPage";
 import { LoginPage } from "@/components/LoginPage";
 import { useSession, signOut } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
@@ -48,6 +49,7 @@ function AuthenticatedApp({ user }: { user: { name: string; image?: string | nul
       <Route path={ROUTES.history} element={<PageLayout title="HISTORY"><HistoryPage /></PageLayout>} />
       <Route path={ROUTES.settings} element={<PageLayout title="SETTINGS"><SettingsPage settings={settings} onSettingsChange={setSettings} /></PageLayout>} />
       <Route path="/dialogues/:id" element={<PageLayout title="DIALOGUE"><DialogueDetailPage /></PageLayout>} />
+      <Route path={ROUTES.methodology} element={<MethodologyPage />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

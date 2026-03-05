@@ -3,5 +3,6 @@ export const ROUTES = {
   practice: "/practice",
   history: "/history",
   settings: "/settings",
+  methodology: "/methodology",
   dialogue: (id: string) => `/dialogues/${id}`,
 } as const;
