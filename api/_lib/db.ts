@@ -1,6 +1,8 @@
 import { Pool } from "pg";
 
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-  ssl: process.env.POSTGRES_URL ? { rejectUnauthorized: false } : undefined,
+  connectionString,
+  ssl: connectionString ? { rejectUnauthorized: false } : undefined,
 });
