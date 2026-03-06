@@ -68,6 +68,14 @@ const server = serve({
       },
     },
 
+    // Static assets
+    "/assets/*": async (req) => {
+      const url = new URL(req.url);
+      const file = Bun.file(`./assets${url.pathname.slice("/assets".length)}`);
+      if (await file.exists()) return new Response(file);
+      return new Response("Not found", { status: 404 });
+    },
+
     // Serve index.html for all unmatched routes.
     "/*": index,
 
