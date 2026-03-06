@@ -13,7 +13,7 @@ import { LoginPage } from "@/components/LoginPage";
 import { useSession, signOut } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 import { loadSessions } from "@/lib/storage";
-import type { Settings } from "@/lib/types";
+import type { Settings, SpeechSession, FeedbackScores } from "@/lib/types";
 import "./index.css";
 
 export function App() {
@@ -83,6 +83,115 @@ function PageLayout({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+// ---------------------------------------------------------------------------
+// Dashboard data helpers
+// ---------------------------------------------------------------------------
+
+interface DashboardData {
+  totalSessions: number;
+  totalWords: number;
+  avgScore: number;
+  mostUsedFramework: string;
+  recentScores: number[];
+  dimensionAvgs: Record<keyof FeedbackScores, number>;
+  strongestDim: string;
+  weakestDim: string;
+  latestImprovement: string;
+  dateJoined: string;
+}
+
+function computeDashboard(sessions: SpeechSession[], createdAt?: Date): DashboardData {
+  const joined = createdAt ? new Date(createdAt) : new Date();
+  const dateJoined = `${String(joined.getMonth() + 1).padStart(2, "0")}-${String(joined.getFullYear()).slice(2)}`;
+
+  const totalWords = sessions.reduce(
+    (sum, s) => sum + (s.feedbackData?.transcript?.split(/\s+/).filter(Boolean).length ?? 0),
+    0,
+  );
+
+  // Sessions with feedback
+  const scored = sessions.filter((s) => s.feedbackData?.feedback?.overall_score != null);
+  const avgScore = scored.length
+    ? Math.round(scored.reduce((s, x) => s + x.feedbackData.feedback.overall_score, 0) / scored.length)
+    : 0;
+
+  // Recent scores (most recent first, take up to 10)
+  const recentScores = scored.slice(0, 10).map((s) => s.feedbackData.feedback.overall_score);
+
+  // Framework frequency
+  const fwCounts: Record<string, number> = {};
+  for (const s of scored) {
+    const fw = s.feedbackData.feedback.framework_detected;
+    if (fw) fwCounts[fw] = (fwCounts[fw] || 0) + 1;
+  }
+  const mostUsedFramework =
+    Object.entries(fwCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "None";
+
+  // Dimension averages
+  const dims: (keyof FeedbackScores)[] = ["structure", "clarity", "specificity", "persuasiveness", "language"];
+  const dimSums: Record<string, number> = {};
+  const dimCounts: Record<string, number> = {};
+  for (const d of dims) {
+    dimSums[d] = 0;
+    dimCounts[d] = 0;
+  }
+  for (const s of scored) {
+    const sc = s.feedbackData.feedback.scores;
+    if (!sc) continue;
+    for (const d of dims) {
+      if (sc[d] != null) {
+        dimSums[d] += sc[d];
+        dimCounts[d] += 1;
+      }
+    }
+  }
+  const dimensionAvgs = {} as Record<keyof FeedbackScores, number>;
+  for (const d of dims) {
+    dimensionAvgs[d] = dimCounts[d] ? Math.round(dimSums[d] / dimCounts[d]) : 0;
+  }
+
+  const sortedDims = dims.filter((d) => dimensionAvgs[d] > 0).sort((a, b) => dimensionAvgs[b] - dimensionAvgs[a]);
+  const strongestDim = sortedDims[0] ?? "N/A";
+  const weakestDim = sortedDims[sortedDims.length - 1] ?? "N/A";
+
+  const latestImprovement = scored[0]?.feedbackData.feedback.improvement ?? "";
+
+  return {
+    totalSessions: sessions.length,
+    totalWords,
+    avgScore,
+    mostUsedFramework,
+    recentScores,
+    dimensionAvgs,
+    strongestDim,
+    weakestDim,
+    latestImprovement,
+    dateJoined,
+  };
+}
+
+/** Render a mini ASCII bar: filled blocks proportional to value (0-100), width chars wide */
+function asciiBar(value: number, width = 12): string {
+  const filled = Math.round((value / 100) * width);
+  return "\u2588".repeat(filled) + "\u2591".repeat(width - filled);
+}
+
+/** Simple sparkline using block elements for an array of scores (0-100) */
+function sparkline(scores: number[]): string {
+  if (scores.length === 0) return "";
+  const blocks = ["\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
+  // Reverse so oldest is on left
+  const ordered = [...scores].reverse();
+  const min = Math.min(...ordered);
+  const max = Math.max(...ordered);
+  const range = max - min || 1;
+  return ordered.map((v) => blocks[Math.min(7, Math.floor(((v - min) / range) * 7))]).join("");
+}
+
+// ---------------------------------------------------------------------------
+// HomePage component
+// ---------------------------------------------------------------------------
+
 function HomePage({
   user,
   settings,
@@ -94,33 +203,38 @@ function HomePage({
 }) {
   const navigate = useNavigate();
 
-  const [userStats, setUserStats] = useState({ wordsSpoken: 0, dialogues: 0, dateJoined: "" });
+  const [userStats, setUserStats] = useState({ wordsSpoken: 0, dialogues: 0 });
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    const joined = user.createdAt ? new Date(user.createdAt) : new Date();
-    const joinedStr = `${String(joined.getMonth() + 1).padStart(2, "0")}-${String(joined.getFullYear()).slice(2)}`;
-
-    // Local sessions as baseline
     const sessions = loadSessions();
-    const localWords = sessions.reduce((sum, s) => {
-      return sum + (s.feedbackData?.transcript?.split(/\s+/).filter(Boolean).length ?? 0);
-    }, 0);
-    setUserStats({ wordsSpoken: localWords, dialogues: sessions.length, dateJoined: joinedStr });
+    const data = computeDashboard(sessions, user.createdAt);
+    setDashboard(data);
+    setUserStats({ wordsSpoken: data.totalWords, dialogues: data.totalSessions });
 
-    // Remote stats override (server has the authoritative count)
+    // Remote stats override
     fetch("/api/user-stats")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
+      .then((remote) => {
+        if (remote) {
           setUserStats((prev) => ({
-            ...prev,
-            wordsSpoken: Math.max(data.wordsSpoken, localWords),
-            dialogues: Math.max(data.dialogues, sessions.length),
+            wordsSpoken: Math.max(remote.wordsSpoken, prev.wordsSpoken),
+            dialogues: Math.max(remote.dialogues, prev.dialogues),
           }));
         }
       })
       .catch(() => {});
   }, [user.createdAt]);
+
+  const dims: { key: keyof FeedbackScores; label: string }[] = [
+    { key: "structure", label: "STRUCT" },
+    { key: "clarity", label: "CLARITY" },
+    { key: "specificity", label: "SPECIF" },
+    { key: "persuasiveness", label: "PERSUA" },
+    { key: "language", label: "LANG" },
+  ];
+
+  const hasSessions = dashboard && dashboard.totalSessions > 0 && dashboard.avgScore > 0;
 
   return (
     <div className="split-panel">
@@ -131,29 +245,95 @@ function HomePage({
           <div className="bg-bg-subtle px-3 py-2">USER: {user.name?.toUpperCase()}</div>
           <div className="bg-bg-subtle px-3 py-2">WORDS SPOKEN: {userStats.wordsSpoken.toLocaleString()}</div>
           <div className="bg-bg-subtle px-3 py-2">DIALOGUES HAD: {userStats.dialogues}</div>
-          <div className="bg-bg-subtle px-3 py-2">DATE JOINED: {userStats.dateJoined}</div>
+          <div className="bg-bg-subtle px-3 py-2">DATE JOINED: {dashboard?.dateJoined ?? "..."}</div>
         </div>
       </div>
 
-      {/* Right panel — content */}
-      <div className="flex flex-col justify-center px-[var(--pad)] py-12 lg:py-0">
+      {/* Right panel — dashboard */}
+      <div className="flex flex-col justify-center px-[var(--pad)] py-12 lg:py-0 overflow-y-auto">
         <div className="max-w-[520px]">
-          <span className="section-label">Practice / Index 01</span>
+          <span className="section-label">Dashboard / Overview</span>
 
           <h1 className="text-[1.75rem] lg:text-[2.5rem] font-medium tracking-tight leading-[1.1] mb-2">
             <ScrambleText text="Extemp" />
           </h1>
-          <p className="text-[1rem] lg:text-[1.1rem] text-muted-foreground mb-8">
+          <p className="text-[1rem] lg:text-[1.1rem] text-muted-foreground mb-6">
             Think fast. Speak clearly.
           </p>
 
-          <p className="text-[1rem] lg:text-[1.1rem] leading-[1.6] mb-12 text-foreground">
-            Get a random prompt, organize your thoughts, speak, and receive AI
-            coaching feedback with framework detection. Train yourself to sound
-            prepared when you're not.
-          </p>
+          {/* ── Quick Stats Row ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px border border-hairline font-mono text-[0.65rem] uppercase tracking-[0.08em]" style={{ backgroundColor: "var(--border)" }}>
+            <div className="bg-background px-3 py-3">
+              <div className="text-muted-foreground mb-1">Sessions</div>
+              <div className="text-foreground text-[1rem] font-medium">{userStats.dialogues}</div>
+            </div>
+            <div className="bg-background px-3 py-3">
+              <div className="text-muted-foreground mb-1">Words</div>
+              <div className="text-foreground text-[1rem] font-medium">{userStats.wordsSpoken.toLocaleString()}</div>
+            </div>
+            <div className="bg-background px-3 py-3">
+              <div className="text-muted-foreground mb-1">Avg Score</div>
+              <div className="text-foreground text-[1rem] font-medium">{hasSessions ? `${dashboard.avgScore}/100` : "--"}</div>
+            </div>
+            <div className="bg-background px-3 py-3">
+              <div className="text-muted-foreground mb-1">Framework</div>
+              <div className="text-foreground text-[1rem] font-medium">{hasSessions ? dashboard.mostUsedFramework : "--"}</div>
+            </div>
+          </div>
 
-          <div className="flex flex-col gap-3">
+          {hasSessions ? (
+            <>
+              {/* ── Score Trend ── */}
+              {dashboard.recentScores.length >= 2 && (
+                <div className="mt-6">
+                  <span className="section-label">Score Trend (recent)</span>
+                  <div className="font-mono text-[1.1rem] tracking-[0.15em] text-foreground mt-1" title={dashboard.recentScores.slice().reverse().join(", ")}>
+                    {sparkline(dashboard.recentScores)}
+                    <span className="text-[0.65rem] text-muted-foreground ml-2 tracking-normal">
+                      {dashboard.recentScores[dashboard.recentScores.length - 1]} → {dashboard.recentScores[0]}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Strengths & Weaknesses ── */}
+              <div className="mt-6">
+                <span className="section-label">Dimension Scores</span>
+                <div className="mt-2 space-y-1.5">
+                  {dims.map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.08em]">
+                      <span className="w-[52px] text-muted-foreground text-right shrink-0">{label}</span>
+                      <span className="text-foreground leading-none" style={{ letterSpacing: "1px" }}>
+                        {asciiBar(dashboard.dimensionAvgs[key])}
+                      </span>
+                      <span className="text-muted-foreground">{dashboard.dimensionAvgs[key]}</span>
+                      {key === dashboard.strongestDim && <span className="text-green-500 text-[0.55rem]">BEST</span>}
+                      {key === dashboard.weakestDim && dashboard.strongestDim !== dashboard.weakestDim && (
+                        <span className="text-orange-400 text-[0.55rem]">GROW</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Recent Improvement Tip ── */}
+              {dashboard.latestImprovement && (
+                <div className="mt-6 border border-hairline px-4 py-3 bg-bg-subtle">
+                  <span className="section-label">Latest Tip</span>
+                  <p className="text-[0.85rem] leading-[1.5] text-foreground mt-1">
+                    {dashboard.latestImprovement}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="mt-6 text-[0.9rem] leading-[1.6] text-muted-foreground">
+              Complete your first session to see scores, trends, and personalized coaching insights here.
+            </p>
+          )}
+
+          {/* ── CTA Buttons ── */}
+          <div className="flex flex-col gap-3 mt-8">
             <Button
               variant="cta"
               size="touch"
@@ -173,7 +353,7 @@ function HomePage({
             </Button>
           </div>
 
-          <div className="mt-20 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
+          <div className="mt-12 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[0.7rem] text-muted-foreground">
             <span>FRAMEWORKS: PREP, STAR, ADD</span>
             <span>FEEDBACK: AI COACH</span>
             <span>USER: {user.name?.toUpperCase()}</span>
