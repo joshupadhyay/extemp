@@ -12,7 +12,9 @@ interface ResultsPanelProps {
 }
 
 function sanitizeHighlightedTranscript(html: string): string {
-  return html.replace(/<\/?(?!mark\b)[^>]*>/gi, "");
+  // Strip all tags except <mark> and </mark>, then remove any attributes from <mark>
+  const noTags = html.replace(/<\/?(?!mark[\s>])[^>]*>/gi, "");
+  return noTags.replace(/<mark\s[^>]*>/gi, "<mark>");
 }
 
 const ASCII_WAVEFORM = `  .                               .

@@ -6,7 +6,7 @@ async function handle(req: Request): Promise<Response> {
   } catch (err: any) {
     console.error("Auth handler error:", err);
     return Response.json(
-      { error: err.message, stack: err.stack?.split("\n").slice(0, 5) },
+      { error: "Authentication error" },
       { status: 500 },
     );
   }
