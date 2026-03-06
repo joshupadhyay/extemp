@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Timer } from "@/components/Timer";
 import { PromptCard } from "@/components/PromptCard";
 import { ResultsPanel } from "@/components/ResultsPanel";
-import { ProcessingScreen } from "@/components/ProcessingScreen";
+import { ProcessingScreen, type ProcessingStep } from "@/components/ProcessingScreen";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { getRandomPromptByCategories, getRandomPrompt, getTwoRandomPrompts } from "@/lib/prompts";
 import { mockFeedbackData } from "@/lib/mockFeedback";
@@ -89,8 +89,8 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
   const [promptChoices, setPromptChoices] = useState<[Prompt, Prompt] | null>(null);
   const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
-  const [processingStatus, setProcessingStatus] = useState("");
-  const [processingSubstatus, setProcessingSubstatus] = useState<string | undefined>();
+  const [processingStep, setProcessingStep] = useState<ProcessingStep>("transcribing");
+  const [completedSteps, setCompletedSteps] = useState<ProcessingStep[]>([]);
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder({
     onChunk: uploadChunk,
@@ -191,7 +191,8 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
     if (phaseRef.current !== "speaking") return;
 
     setPhase("processing");
-    setProcessingStatus("Transcribing your speech");
+    setProcessingStep("transcribing");
+    setCompletedSteps([]);
     setTranscribeError(null);
 
     try {
@@ -207,11 +208,10 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
       let transcript: string;
       let transcriptionResult: TranscriptionResult | undefined;
 
+      // Step 1: Transcription
       if (audioBlob && audioBlob.size > 0) {
         try {
-          setProcessingSubstatus("Uploading audio");
           const jobId = await startTranscription(audioBlob);
-          setProcessingSubstatus("Waiting for Whisper");
           transcriptionResult = await pollJob<TranscriptionResult>(jobId);
           transcript = transcriptionResult.transcript;
         } catch (err) {
@@ -225,9 +225,13 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
         transcript = mockFeedbackData.transcript;
       }
 
-      // Phase 2: generate personalized feedback via LLM
-      setProcessingStatus("Analyzing your delivery");
-      setProcessingSubstatus("Generating coaching feedback");
+      // Step 2: Reviewing transcription (brief transitional step)
+      setCompletedSteps(["transcribing"]);
+      setProcessingStep("reviewing");
+
+      // Step 3: Evaluation
+      setCompletedSteps(["transcribing", "reviewing"]);
+      setProcessingStep("analyzing");
 
       let data: FeedbackData;
       const prompt = currentPromptRef.current;
@@ -237,7 +241,6 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
           const evalJobId = await startEvaluation(
             transcript, prompt.text, settings.prepTime, settings.speakingTime,
           );
-          setProcessingSubstatus("Waiting for AI coach");
           data = await pollJob<FeedbackData>(evalJobId);
           data.transcription = transcriptionResult;
         } catch (err) {
@@ -248,6 +251,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
         data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
       }
 
+      setCompletedSteps(["transcribing", "reviewing", "analyzing"]);
       setFeedbackData(data);
 
       // Save session
@@ -316,8 +320,8 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
     setCurrentPrompt(null);
     setPromptChoices(null);
     setFeedbackData(null);
-    setProcessingStatus("");
-    setProcessingSubstatus(undefined);
+    setProcessingStep("transcribing");
+    setCompletedSteps([]);
     setTranscribeError(null);
   }, []);
 
@@ -333,8 +337,8 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
       setPromptChoices(getTwoRandomPrompts());
       setPhase("select");
     } else if (target === "processing") {
-      setProcessingStatus("Transcribing your speech");
-      setProcessingSubstatus("Sending audio to Whisper");
+      setProcessingStep("transcribing");
+      setCompletedSteps([]);
       setPhase("processing");
     } else if (target === "results") {
       setFeedbackData(mockFeedbackData);
@@ -544,7 +548,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
 
       {/* Processing */}
       {phase === "processing" && (
-        <ProcessingScreen status={processingStatus} substatus={processingSubstatus} />
+        <ProcessingScreen currentStep={processingStep} completedSteps={completedSteps} />
       )}
 
       {/* Results */}

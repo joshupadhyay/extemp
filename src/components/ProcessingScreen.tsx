@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 
+export type ProcessingStep = "transcribing" | "reviewing" | "analyzing";
+
 interface ProcessingScreenProps {
-  status: string;
-  substatus?: string;
+  currentStep: ProcessingStep;
+  completedSteps: ProcessingStep[];
 }
+
+const STEPS: { key: ProcessingStep; label: string }[] = [
+  { key: "transcribing", label: "Transcribing audio" },
+  { key: "reviewing", label: "Reviewing transcription" },
+  { key: "analyzing", label: "Collecting analysis" },
+];
 
 function ElapsedTimer() {
   const [elapsed, setElapsed] = useState(0);
@@ -68,26 +76,65 @@ function SkeletonBlock({ width }: { width: string }) {
   );
 }
 
-export function ProcessingScreen({ status, substatus }: ProcessingScreenProps) {
+function StepIndicator({ step, isCurrent, isCompleted }: {
+  step: { key: ProcessingStep; label: string };
+  isCurrent: boolean;
+  isCompleted: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {/* Status indicator */}
+      <div className="flex-none w-5 h-5 flex items-center justify-center">
+        {isCompleted ? (
+          <span className="text-foreground font-mono text-sm">&#10003;</span>
+        ) : isCurrent ? (
+          <span
+            className="block w-2 h-2"
+            style={{
+              backgroundColor: "var(--cta)",
+              animation: "processing-step-pulse 1.5s ease-in-out infinite",
+            }}
+          />
+        ) : (
+          <span className="block w-1.5 h-1.5 bg-muted-foreground/30" />
+        )}
+      </div>
+
+      {/* Label */}
+      <span
+        className={`font-mono text-sm uppercase tracking-[0.05em] transition-colors duration-300 ${
+          isCompleted
+            ? "text-foreground"
+            : isCurrent
+              ? "text-foreground font-medium"
+              : "text-muted-foreground/40"
+        }`}
+      >
+        {step.label}
+      </span>
+
+      {/* Pulsing dots for current step */}
+      {isCurrent && <PulsingDots />}
+    </div>
+  );
+}
+
+export function ProcessingScreen({ currentStep, completedSteps }: ProcessingScreenProps) {
   return (
     <div className="flex flex-col items-center gap-8 py-16 w-full max-w-[640px] mx-auto px-4">
       {/* Section label */}
       <span className="section-label mb-0">PROCESSING</span>
 
-      {/* Status text with pulsing dots */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-medium text-foreground">{status}</span>
-          <PulsingDots />
-        </div>
-        {substatus && (
-          <span
-            className="font-mono text-muted-foreground"
-            style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}
-          >
-            {substatus}
-          </span>
-        )}
+      {/* Step progression */}
+      <div className="flex flex-col gap-4 w-full">
+        {STEPS.map((step) => (
+          <StepIndicator
+            key={step.key}
+            step={step}
+            isCurrent={currentStep === step.key}
+            isCompleted={completedSteps.includes(step.key)}
+          />
+        ))}
       </div>
 
       {/* Skeleton loading preview */}
@@ -106,6 +153,18 @@ export function ProcessingScreen({ status, substatus }: ProcessingScreenProps) {
         <span className="section-label mb-0">ELAPSED</span>
         <ElapsedTimer />
       </div>
+
+      <style>{`
+        @keyframes processing-step-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          @keyframes processing-step-pulse {
+            0%, 100% { opacity: 0.8; }
+          }
+        }
+      `}</style>
     </div>
   );
 }
