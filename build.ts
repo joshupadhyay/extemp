@@ -146,4 +146,12 @@ const outputTable = result.outputs.map(output => ({
 console.table(outputTable);
 const buildTime = (end - start).toFixed(2);
 
+// Copy static assets (e.g. OG images) into the output directory
+const assetsDir = path.join(process.cwd(), "assets");
+if (existsSync(assetsDir)) {
+  const { cpSync } = await import("fs");
+  cpSync(assetsDir, path.join(outdir, "assets"), { recursive: true });
+  console.log("📦 Copied assets/ into output directory");
+}
+
 console.log(`\n✅ Build completed in ${buildTime}ms\n`);
