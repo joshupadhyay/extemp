@@ -101,15 +101,19 @@ export function HistoryPage() {
       {loading ? (
         <div className="flex flex-col gap-3 w-full">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-card/30 animate-pulse border border-muted" />
+            <div key={i} className="h-20 border border-border p-4 flex items-center justify-between">
+              <div className="flex flex-col gap-2 flex-1">
+                <div className="skeleton h-3 w-28" />
+                <div className="skeleton h-4" style={{ width: `${60 + i * 10}%` }} />
+              </div>
+              <div className="skeleton h-8 w-14" />
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <p className="text-lg text-muted-foreground">No sessions yet.</p>
-          <p className="text-sm text-muted-foreground">
-            Complete a practice round and your results will appear here.
-          </p>
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
+          <span className="section-label">HISTORY</span>
+          <p className="font-mono text-sm text-muted-foreground">No dialogues found.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3 w-full">
