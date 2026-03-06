@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 import type { FeedbackData, FillerWordsResult } from "@/lib/types";
+import { toDisplayScore, getScoreLabel } from "@/lib/utils";
 
 interface ResultsPanelProps {
   data: FeedbackData;
@@ -12,7 +13,9 @@ interface ResultsPanelProps {
 }
 
 function sanitizeHighlightedTranscript(html: string): string {
-  return html.replace(/<\/?(?!mark\b)[^>]*>/gi, "");
+  // Strip all tags except <mark> and </mark>, then remove any attributes from <mark>
+  const noTags = html.replace(/<\/?(?!mark[\s>])[^>]*>/gi, "");
+  return noTags.replace(/<mark\s[^>]*>/gi, "<mark>");
 }
 
 const ASCII_WAVEFORM = `  .                               .
@@ -77,7 +80,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 
 export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsPanelProps) {
   const { feedback, transcript, transcription } = data;
-  const score = Math.round(feedback.overall_score * 10);
+  const score = toDisplayScore(feedback.overall_score);
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
   const fillerWords: FillerWordsResult | null = transcription?.filler_words ?? null;
   const highlightedTranscript: string | null = transcription?.highlighted_transcript ?? null;
@@ -191,7 +194,7 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
                 {score}<span className="text-base text-neutral-400 font-normal">/100</span>
               </span>
               <span className="text-sm font-medium text-neutral-500">
-                {score >= 80 ? "Exceptional" : score >= 60 ? "Strong" : score >= 30 ? "Developing" : "Needs work"}
+                {getScoreLabel(score)}
               </span>
               <Link
                 to={ROUTES.methodology}

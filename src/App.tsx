@@ -227,11 +227,11 @@ function HomePage({
   }, [user.createdAt]);
 
   const dims: { key: keyof FeedbackScores; label: string }[] = [
-    { key: "structure", label: "STRUCT" },
+    { key: "structure", label: "STRUCTURE" },
     { key: "clarity", label: "CLARITY" },
-    { key: "specificity", label: "SPECIF" },
-    { key: "persuasiveness", label: "PERSUA" },
-    { key: "language", label: "LANG" },
+    { key: "specificity", label: "SPECIFICITY" },
+    { key: "persuasiveness", label: "PERSUASION" },
+    { key: "language", label: "LANGUAGE" },
   ];
 
   const hasSessions = dashboard && dashboard.totalSessions > 0 && dashboard.avgScore > 0;
@@ -302,14 +302,14 @@ function HomePage({
                 <div className="mt-2 space-y-1.5">
                   {dims.map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.08em]">
-                      <span className="w-[52px] text-muted-foreground text-right shrink-0">{label}</span>
+                      <span className="w-[80px] text-muted-foreground text-right shrink-0">{label}</span>
                       <span className="text-foreground leading-none" style={{ letterSpacing: "1px" }}>
                         {asciiBar(dashboard.dimensionAvgs[key])}
                       </span>
                       <span className="text-muted-foreground">{dashboard.dimensionAvgs[key]}</span>
-                      {key === dashboard.strongestDim && <span className="text-green-500 text-[0.55rem]">BEST</span>}
+                      {key === dashboard.strongestDim && <span className="text-[0.55rem]" style={{ color: 'var(--success)' }}>BEST</span>}
                       {key === dashboard.weakestDim && dashboard.strongestDim !== dashboard.weakestDim && (
-                        <span className="text-orange-400 text-[0.55rem]">GROW</span>
+                        <span className="text-[0.55rem]" style={{ color: 'var(--warning)' }}>GROW</span>
                       )}
                     </div>
                   ))}

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { loadSessions } from "@/lib/storage";
 import { ROUTES } from "@/lib/routes";
 import type { SpeechSession, DialogueSummary } from "@/lib/types";
+import { toDisplayScore } from "@/lib/utils";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -27,7 +28,13 @@ export function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedLocal, setSelectedLocal] = useState<SpeechSession | null>(null);
 
+  const lastLoadRef = useRef(0);
+
   const loadHistory = useCallback(() => {
+    // Skip if loaded less than 5 seconds ago (prevents rapid focus/blur hammering)
+    const now = Date.now();
+    if (now - lastLoadRef.current < 5000) return;
+    lastLoadRef.current = now;
     const localSessions = loadSessions();
     const localItems: HistoryItem[] = localSessions.map((s) => ({ source: "local" as const, session: s }));
 
@@ -130,7 +137,7 @@ export function HistoryPage() {
                       )}
                     </div>
                     <div className="shrink-0 text-2xl font-bold">
-                      {Math.round(s.feedbackData.feedback.overall_score * 10)}
+                      {toDisplayScore(s.feedbackData.feedback.overall_score)}
                       <span className="text-sm text-muted-foreground font-normal">/100</span>
                     </div>
                   </CardContent>
@@ -156,7 +163,7 @@ export function HistoryPage() {
                     )}
                   </div>
                   <div className="shrink-0 text-2xl font-bold">
-                    {d.overall_score != null ? Math.round(d.overall_score * 10) : "--"}
+                    {d.overall_score != null ? toDisplayScore(d.overall_score) : "--"}
                     <span className="text-sm text-muted-foreground font-normal">/100</span>
                   </div>
                 </CardContent>

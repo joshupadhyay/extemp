@@ -320,8 +320,6 @@ class Whisper:
         audio_path = os.path.join(AUDIO_DIR, f"{audio_id}{audio_ext}")
         with open(audio_path, "wb") as f:
             f.write(contents)
-        audio_volume.commit()
-
         try:
             # Write to temp file for librosa/whisper to read
             tmp = tempfile.NamedTemporaryFile(suffix=audio_ext, delete=False)
@@ -393,6 +391,8 @@ class Whisper:
                 for p in filler_words["positions"]
             ],
         }
+
+        audio_volume.commit()
 
         return JSONResponse(
             content={

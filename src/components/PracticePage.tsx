@@ -139,8 +139,13 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
         // Release the stream immediately — we just needed the permission grant
         stream.getTracks().forEach((track) => track.stop());
         micPermissionGrantedRef.current = true;
-      } catch {
-        // If denied, don't proceed to countdown
+      } catch (err) {
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotFoundError") {
+          alert("No microphone found. Please connect a microphone and try again.");
+        } else {
+          alert("Microphone access is required to practice. Please allow microphone access and try again.");
+        }
         return;
       }
     }
