@@ -19,7 +19,7 @@ function handleSignIn(provider: "google" | "github") {
   try {
     localStorage.setItem(LAST_PROVIDER_KEY, provider);
   } catch {}
-  signIn.social({ provider, callbackURL: "/" });
+  signIn.social({ provider, callbackURL: "/practice" });
 }
 
 export function LoginPage() {

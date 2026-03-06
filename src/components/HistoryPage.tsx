@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { loadSessions } from "@/lib/storage";
 import { ROUTES } from "@/lib/routes";
 import type { SpeechSession, DialogueSummary } from "@/lib/types";
+import { toDisplayScore } from "@/lib/utils";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -27,9 +28,18 @@ export function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedLocal, setSelectedLocal] = useState<SpeechSession | null>(null);
 
-  useEffect(() => {
+  const lastLoadRef = useRef(0);
+
+  const loadHistory = useCallback(() => {
+    // Skip if loaded less than 5 seconds ago (prevents rapid focus/blur hammering)
+    const now = Date.now();
+    if (now - lastLoadRef.current < 5000) return;
+    lastLoadRef.current = now;
     const localSessions = loadSessions();
     const localItems: HistoryItem[] = localSessions.map((s) => ({ source: "local" as const, session: s }));
+
+    // Show local sessions immediately so there's no flash of empty state
+    setItems((prev) => prev.length === 0 ? localItems : prev);
 
     fetch("/api/dialogues?limit=50")
       .then((res) => (res.ok ? res.json() : { dialogues: [] }))
@@ -60,6 +70,18 @@ export function HistoryPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Load on mount
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  // Reload when the tab/window regains focus (covers navigating back from results)
+  useEffect(() => {
+    const handleFocus = () => loadHistory();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [loadHistory]);
 
   if (selectedLocal) {
     return (
@@ -115,8 +137,8 @@ export function HistoryPage() {
                       )}
                     </div>
                     <div className="shrink-0 text-2xl font-bold">
-                      {s.feedbackData.feedback.overall_score}
-                      <span className="text-sm text-muted-foreground font-normal">/10</span>
+                      {toDisplayScore(s.feedbackData.feedback.overall_score)}
+                      <span className="text-sm text-muted-foreground font-normal">/100</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -141,8 +163,8 @@ export function HistoryPage() {
                     )}
                   </div>
                   <div className="shrink-0 text-2xl font-bold">
-                    {d.overall_score != null ? d.overall_score : "--"}
-                    <span className="text-sm text-muted-foreground font-normal">/10</span>
+                    {d.overall_score != null ? toDisplayScore(d.overall_score) : "--"}
+                    <span className="text-sm text-muted-foreground font-normal">/100</span>
                   </div>
                 </CardContent>
               </Card>

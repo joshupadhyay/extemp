@@ -128,7 +128,28 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownCategoryRef = useRef<string[] | undefined>();
 
-  const handleReady = useCallback((categories?: string[]) => {
+  // Track whether mic permission has been granted this session
+  const micPermissionGrantedRef = useRef(false);
+
+  const handleReady = useCallback(async (categories?: string[]) => {
+    // Request mic permission upfront so the browser dialog doesn't interrupt mid-flow
+    if (!micPermissionGrantedRef.current) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Release the stream immediately — we just needed the permission grant
+        stream.getTracks().forEach((track) => track.stop());
+        micPermissionGrantedRef.current = true;
+      } catch (err) {
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotFoundError") {
+          alert("No microphone found. Please connect a microphone and try again.");
+        } else {
+          alert("Microphone access is required to practice. Please allow microphone access and try again.");
+        }
+        return;
+      }
+    }
+
     countdownCategoryRef.current = categories;
     setCountdown(3);
     setPhase("countdown");
