@@ -4,8 +4,10 @@ import { handleEvaluate } from "./api/evaluate";
 import { auth } from "./lib/auth";
 import { pool } from "./lib/db";
 import { handleDialogues, handleDialogueById } from "./api/dialogues";
+import { processGroqResponse } from "../api/_lib/transcription";
 
-const MODAL_ENDPOINT_URL = process.env.MODAL_ENDPOINT_URL;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_TRANSCRIPTION_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
 // --- Progressive audio chunk storage ---
 interface ChunkSession {
@@ -177,9 +179,9 @@ const server = serve({
 
     "/api/transcribe": {
       async POST(req) {
-        if (!MODAL_ENDPOINT_URL) {
+        if (!GROQ_API_KEY) {
           return Response.json(
-            { error: "MODAL_ENDPOINT_URL is not configured on the server." },
+            { error: "GROQ_API_KEY is not configured on the server." },
             { status: 500 },
           );
         }
@@ -198,41 +200,36 @@ const server = serve({
           const job = createJob("transcribe");
           const jobId = job.id;
 
-          // Process in background (Bun has no timeout issues)
+          // Process in background
           (async () => {
             try {
               job.status = "processing";
               job.updated_at = new Date().toISOString();
 
-              // Save a local copy for testing/debugging (dev only)
-              if (process.env.NODE_ENV !== "production") {
-                try {
-                  const ext = audioFile.name?.split(".").pop() || "webm";
-                  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                  const localPath = `./recordings/recording-${timestamp}.${ext}`;
-                  await Bun.write(localPath, audioFile);
-                  console.log(`Saved audio copy: ${localPath} (${audioFile.size} bytes)`);
-                } catch (e) {
-                  console.warn("Failed to save local audio copy:", e);
-                }
-              }
+              const groqForm = new FormData();
+              groqForm.append("file", audioFile, audioFile.name || "recording.webm");
+              groqForm.append("model", "whisper-large-v3-turbo");
+              groqForm.append("response_format", "verbose_json");
+              groqForm.append("timestamp_granularities[]", "word");
+              groqForm.append("timestamp_granularities[]", "segment");
+              groqForm.append("language", "en");
 
-              const modalForm = new FormData();
-              modalForm.append("file", audioFile, audioFile.name || "recording.webm");
-
-              const modalRes = await fetch(MODAL_ENDPOINT_URL!, {
+              const groqRes = await fetch(GROQ_TRANSCRIPTION_URL, {
                 method: "POST",
-                body: modalForm,
+                headers: {
+                  "Authorization": `Bearer ${GROQ_API_KEY}`,
+                },
+                body: groqForm,
               });
 
-              const body = await modalRes.json();
-
-              if (!modalRes.ok) {
+              if (!groqRes.ok) {
+                const errorBody = await groqRes.text();
                 job.status = "failed";
-                job.error = body.error || `Modal returned ${modalRes.status}`;
+                job.error = `Groq returned ${groqRes.status}: ${errorBody}`;
               } else {
+                const groqResponse = await groqRes.json();
                 job.status = "completed";
-                job.result = body;
+                job.result = processGroqResponse(groqResponse);
               }
               job.updated_at = new Date().toISOString();
             } catch (err) {
