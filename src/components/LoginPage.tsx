@@ -89,11 +89,19 @@ export function LoginPage() {
             </Button>
           </div>
 
-          {memberCount !== null && (
-            <p className="mt-6 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">
-              ACADEMY MEMBERS: {memberCount.toLocaleString()}
-            </p>
-          )}
+          <p className="mt-6 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground">
+            {memberCount !== null && (
+              <>{`ACADEMY MEMBERS: ${memberCount.toLocaleString()} · `}</>
+            )}
+            <a
+              href="https://joshupadhyay.xyz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 decoration-muted-foreground/40 hover:text-foreground hover:decoration-foreground/60 transition-all duration-300 ease-out"
+            >
+              SEE MY WEBSITE &rarr;
+            </a>
+          </p>
         </div>
       </div>
     </div>
