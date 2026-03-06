@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #ffffff;
+    color: #111111;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Left panel — waveform */
+  .left {
+    background: #fafafa;
+    border-right: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ascii-waveform {
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 7px;
+    line-height: 8px;
+    white-space: pre;
+    color: #111111;
+    opacity: 0.7;
+    user-select: none;
+  }
+
+  .steps {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #e5e5e5;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: #e5e5e5;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888888;
+  }
+
+  .steps div {
+    background: #fafafa;
+    padding: 10px 16px;
+  }
+
+  /* Right panel — content */
+  .right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 64px;
+  }
+
+  .section-label {
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888888;
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  h1 {
+    font-size: 72px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+
+  .tagline {
+    font-size: 20px;
+    line-height: 1.6;
+    color: #111111;
+    margin-bottom: 48px;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #dc2626;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 14px 32px;
+    border: none;
+    letter-spacing: 0.01em;
+  }
+
+  .footer-meta {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    gap: 32px;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body>
+
+<div class="left">
+  <div class="ascii-waveform" id="waveform"></div>
+  <div class="steps">
+    <div>1. Choose a prompt</div>
+    <div>2. Speak</div>
+    <div>3. Receive feedback</div>
+  </div>
+</div>
+
+<div class="right">
+  <span class="section-label">Impromptu Speaking Practice</span>
+  <h1>Extemp</h1>
+  <p class="tagline">Practice speaking clearly and effectively, under time constraints.</p>
+  <div>
+    <div class="cta-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      Try it out
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span>Frameworks: PREP, STAR, ADD</span>
+    <span>Feedback: AI Coach</span>
+  </div>
+</div>
+
+<script>
+const CHARS = " .:-=+*#%@";
+
+function computeFrame(cols, rows, time) {
+  let output = "";
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const nx = x / cols;
+      const ny = (y - rows / 2) / (rows / 2);
+      const wave1 = Math.sin(nx * 12 + time * 1.5) * 0.4;
+      const wave2 = Math.sin(nx * 7 - time * 0.8) * 0.25;
+      const wave3 = Math.sin(nx * 20 + time * 2.2) * 0.15;
+      const wave = wave1 + wave2 + wave3;
+      const envelope = Math.exp(-Math.pow((nx - 0.5) * 2.5, 2)) * 0.8 + 0.2;
+      const dist = Math.abs(ny - wave * envelope);
+      const val = Math.max(0, 1 - dist * 2.5);
+      if (val < 0.05) {
+        output += " ";
+      } else {
+        const charIdx = Math.min(Math.floor(val * CHARS.length), CHARS.length - 1);
+        output += CHARS[charIdx];
+      }
+    }
+    output += "\n";
+  }
+  return output;
+}
+
+const el = document.getElementById("waveform");
+const cols = Math.floor(600 / 7);
+const rows = Math.floor(580 / 8);
+el.textContent = computeFrame(cols, rows, 1.2);
+</script>
+
+</body>
+</html>
