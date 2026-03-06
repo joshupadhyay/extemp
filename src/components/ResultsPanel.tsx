@@ -7,6 +7,7 @@ import { toDisplayScore, getScoreLabel } from "@/lib/utils";
 
 interface ResultsPanelProps {
   data: FeedbackData;
+  prompt?: string;
   onPracticeAgain?: () => void;
   onDone?: () => void;
   onBack?: () => void;
@@ -78,7 +79,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   );
 }
 
-export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsPanelProps) {
+export function ResultsPanel({ data, prompt, onPracticeAgain, onDone, onBack }: ResultsPanelProps) {
   const { feedback, transcript, transcription } = data;
   const score = toDisplayScore(feedback.overall_score);
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
@@ -189,6 +190,11 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
           </div>
 
           <div className="border-b border-neutral-100 pb-8">
+            {prompt && (
+              <p className="text-base lg:text-lg font-medium text-neutral-900 leading-snug mb-3">
+                &ldquo;{prompt}&rdquo;
+              </p>
+            )}
             <div className="flex items-center gap-4 mb-1">
               <span className="font-mono text-2xl font-bold text-neutral-900 tabular-nums">
                 {score}<span className="text-base text-neutral-400 font-normal">/100</span>

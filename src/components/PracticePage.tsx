@@ -558,7 +558,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
               </p>
             </div>
           )}
-          <ResultsPanel data={feedbackData} onPracticeAgain={handleStart} onDone={handleReset} />
+          <ResultsPanel data={feedbackData} prompt={currentPrompt?.text} onPracticeAgain={handleStart} onDone={handleReset} />
         </div>
       )}
 

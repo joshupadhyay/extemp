@@ -87,6 +87,7 @@ export function HistoryPage() {
     return (
       <ResultsPanel
         data={selectedLocal.feedbackData}
+        prompt={selectedLocal.prompt}
         onBack={() => setSelectedLocal(null)}
         onPracticeAgain={() => navigate(ROUTES.practice)}
       />

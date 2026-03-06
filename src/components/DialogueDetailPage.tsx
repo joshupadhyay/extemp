@@ -58,6 +58,7 @@ export function DialogueDetailPage() {
   return (
     <ResultsPanel
       data={feedbackData}
+      prompt={detail.prompt_text}
       onBack={() => navigate(ROUTES.history)}
       onPracticeAgain={() => navigate(ROUTES.practice)}
     />
