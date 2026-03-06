@@ -186,23 +186,21 @@ export function ResultsPanel({ data, onPracticeAgain, onDone, onBack }: ResultsP
           </div>
 
           <div className="border-b border-neutral-100 pb-8">
-            <div className="flex items-end justify-between mb-2">
-              <h1 className="text-6xl font-bold tracking-tighter text-neutral-900 leading-none">
-                {score}<span className="text-3xl text-neutral-300 font-light">/100</span>
-              </h1>
-            </div>
-            <div className="flex items-baseline gap-3">
-              <p className="text-sm font-medium uppercase tracking-wide" style={{ color: "#E8302A" }}>
-                Confidence Score
-              </p>
+            <div className="flex items-center gap-4 mb-1">
+              <span className="font-mono text-2xl font-bold text-neutral-900 tabular-nums">
+                {score}<span className="text-base text-neutral-400 font-normal">/100</span>
+              </span>
+              <span className="text-sm font-medium text-neutral-500">
+                {score >= 80 ? "Exceptional" : score >= 60 ? "Strong" : score >= 30 ? "Developing" : "Needs work"}
+              </span>
               <Link
                 to={ROUTES.methodology}
-                className="font-mono text-xs uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
+                className="ml-auto font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
               >
-                How is this calculated?
+                Methodology
               </Link>
             </div>
-            <p className="text-neutral-500 text-sm mt-1">{dateStr}</p>
+            <p className="text-neutral-500 text-sm">{dateStr}</p>
           </div>
         </div>
 

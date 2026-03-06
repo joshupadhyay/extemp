@@ -82,10 +82,10 @@ const FRAMEWORKS = [
 ];
 
 const SCALE = [
-  { range: "1\u20133", label: "Needs work", description: "Significant gaps in this dimension. Common for first attempts at impromptu speaking." },
-  { range: "4\u20136", label: "Developing", description: "Typical casual speaker. The foundation is there but not yet consistent." },
-  { range: "7\u20138", label: "Strong", description: "Clear competence. Most listeners would find this effective and engaging." },
-  { range: "9\u201310", label: "Exceptional", description: "Rare. Demonstrates mastery that would stand out in competitive or professional settings." },
+  { range: "0\u201330", label: "Needs work", description: "Significant gaps in this dimension. Common for first attempts at impromptu speaking." },
+  { range: "30\u201360", label: "Developing", description: "Typical casual speaker. The foundation is there but not yet consistent." },
+  { range: "60\u201380", label: "Strong", description: "Clear competence. Most listeners would find this effective and engaging." },
+  { range: "80\u2013100", label: "Exceptional", description: "Rare. Demonstrates mastery that would stand out in competitive or professional settings." },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -137,16 +137,15 @@ export function MethodologyPage() {
           <SectionLabel>The Confidence Score</SectionLabel>
           <div className="space-y-4 text-base text-neutral-600 leading-relaxed">
             <p>
-              Your headline score (displayed as 0&ndash;100) is a holistic assessment
+              Your score (0&ndash;100) is a holistic assessment
               of your overall speaking performance. The AI coach evaluates your speech
               as a whole&mdash;not as a mechanical average of subscores&mdash;considering
               how well you organized your thoughts, supported your arguments, and delivered
               them with confidence.
             </p>
             <p>
-              The raw score is 1&ndash;10, multiplied by 10 for display. A 7 becomes 70/100.
               The coach is calibrated to be encouraging but honest: most casual speakers land
-              in the 40&ndash;60 range, and scores above 80 require genuinely strong performance.
+              in the 30&ndash;60 range, and scores above 80 require genuinely strong performance.
             </p>
           </div>
         </section>

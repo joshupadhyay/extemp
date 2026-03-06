@@ -83,6 +83,8 @@ function PageLayout({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+const FIRST_VISIT_KEY = "extemp_has_visited";
+
 function HomePage({
   user,
   settings,
@@ -107,6 +109,28 @@ function HomePage({
     }, 0);
     setUserStats({ wordsSpoken: localWords, dialogues: sessions.length, dateJoined: joinedStr });
 
+    // First-time user: skip homepage, go straight to practice
+    const hasVisited = localStorage.getItem(FIRST_VISIT_KEY);
+    if (!hasVisited && sessions.length === 0) {
+      localStorage.setItem(FIRST_VISIT_KEY, "1");
+      // Check remote too — if they also have zero remote dialogues, redirect
+      fetch("/api/user-stats")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data || data.dialogues === 0) {
+            navigate(ROUTES.practice, { replace: true });
+          }
+        })
+        .catch(() => {
+          // Network error — still redirect since local is empty
+          navigate(ROUTES.practice, { replace: true });
+        });
+      return;
+    }
+    if (!hasVisited) {
+      localStorage.setItem(FIRST_VISIT_KEY, "1");
+    }
+
     // Remote stats override (server has the authoritative count)
     fetch("/api/user-stats")
       .then((res) => (res.ok ? res.json() : null))
@@ -120,7 +144,7 @@ function HomePage({
         }
       })
       .catch(() => {});
-  }, [user.createdAt]);
+  }, [user.createdAt, navigate]);
 
   return (
     <div className="split-panel">
