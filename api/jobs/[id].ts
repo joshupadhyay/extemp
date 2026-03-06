@@ -1,6 +1,12 @@
 import { pool } from "../_lib/db.js";
+import { getAuthUser } from "../_lib/auth.js";
 
 export async function GET(req: Request): Promise<Response> {
+  const user = await getAuthUser(req);
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const url = new URL(req.url);
   const id = url.pathname.split("/").pop();
 

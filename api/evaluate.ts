@@ -1,5 +1,6 @@
 import { waitUntil } from "@vercel/functions";
 import { pool } from "./_lib/db.js";
+import { getAuthUser } from "./_lib/auth.js";
 import type { Feedback, FeedbackData } from "./_lib/types.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -145,6 +146,11 @@ export async function POST(req: Request): Promise<Response> {
       { error: "OPENROUTER_API_KEY is not configured on the server." },
       { status: 500 },
     );
+  }
+
+  const user = await getAuthUser(req);
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: EvaluateRequest;

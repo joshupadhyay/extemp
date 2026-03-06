@@ -1,5 +1,6 @@
 import { waitUntil } from "@vercel/functions";
 import { pool } from "./_lib/db.js";
+import { getAuthUser } from "./_lib/auth.js";
 
 const MODAL_ENDPOINT_URL = process.env.MODAL_ENDPOINT_URL;
 
@@ -47,6 +48,11 @@ export async function POST(req: Request): Promise<Response> {
       { error: "MODAL_ENDPOINT_URL is not configured on the server." },
       { status: 500 },
     );
+  }
+
+  const user = await getAuthUser(req);
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
