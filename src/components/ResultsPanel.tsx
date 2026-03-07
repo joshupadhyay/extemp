@@ -1,6 +1,7 @@
 import { ArrowRight, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { signOut } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/routes";
 import type { FeedbackData, FillerWordsResult } from "@/lib/types";
 import { toDisplayScore, getScoreLabel } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface ResultsPanelProps {
   onPracticeAgain?: () => void;
   onDone?: () => void;
   onBack?: () => void;
+  isGuest?: boolean;
 }
 
 function sanitizeHighlightedTranscript(html: string): string {
@@ -79,7 +81,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   );
 }
 
-export function ResultsPanel({ data, prompt, onPracticeAgain, onDone, onBack }: ResultsPanelProps) {
+export function ResultsPanel({ data, prompt, onPracticeAgain, onDone, onBack, isGuest }: ResultsPanelProps) {
   const { feedback, transcript, transcription } = data;
   const score = toDisplayScore(feedback.overall_score);
   const wordCount = transcript.split(/\s+/).filter(Boolean).length;
@@ -381,26 +383,49 @@ export function ResultsPanel({ data, prompt, onPracticeAgain, onDone, onBack }: 
 
           {/* CTA Buttons */}
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
-            {onPracticeAgain && (
-              <Button
-                variant="cta"
-                size="lg"
-                onClick={onPracticeAgain}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 group"
-              >
-                <span>Another Round?</span>
-                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            )}
-            {onDone && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={onDone}
-                className="w-full sm:w-auto"
-              >
-                Done
-              </Button>
+            {isGuest ? (
+              <>
+                <div className="border border-neutral-200 bg-neutral-50 px-4 py-3 mb-2">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+                    Sign up to save your session and track progress over time
+                  </p>
+                </div>
+                <Button
+                  variant="cta"
+                  size="lg"
+                  onClick={() => {
+                    signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/"; } } });
+                  }}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 group"
+                >
+                  <span>Save & Create Account</span>
+                  <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </>
+            ) : (
+              <>
+                {onPracticeAgain && (
+                  <Button
+                    variant="cta"
+                    size="lg"
+                    onClick={onPracticeAgain}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 group"
+                  >
+                    <span>Another Round?</span>
+                    <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                )}
+                {onDone && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={onDone}
+                    className="w-full sm:w-auto"
+                  >
+                    Done
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

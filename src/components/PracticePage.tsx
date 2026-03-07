@@ -17,6 +17,7 @@ import { PromptScreenB } from "@/components/PromptScreenB";
 interface PracticePageProps {
   settings: Settings;
   setSettings?: React.Dispatch<React.SetStateAction<Settings>>;
+  isGuest?: boolean;
 }
 
 /** Upload a single audio chunk to the server during recording. */
@@ -84,7 +85,7 @@ async function finalizeTranscription(sessionId: string, mimeType: string): Promi
   return body.jobId ?? body;
 }
 
-export function PracticePage({ settings, setSettings }: PracticePageProps) {
+export function PracticePage({ settings, setSettings, isGuest }: PracticePageProps) {
   const [phase, setPhase] = useState<PracticePhase>("prompt");
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
   const [promptChoices, setPromptChoices] = useState<[Prompt, Prompt] | null>(null);
@@ -562,7 +563,7 @@ export function PracticePage({ settings, setSettings }: PracticePageProps) {
               </p>
             </div>
           )}
-          <ResultsPanel data={feedbackData} prompt={currentPrompt?.text} onPracticeAgain={handleStart} onDone={handleReset} />
+          <ResultsPanel data={feedbackData} prompt={currentPrompt?.text} onPracticeAgain={isGuest ? undefined : handleStart} onDone={isGuest ? undefined : handleReset} isGuest={isGuest} />
         </div>
       )}
 
