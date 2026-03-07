@@ -78,6 +78,12 @@ const server = serve({
       return new Response("Not found", { status: 404 });
     },
 
+    // Serve presentation deck
+    "/demo": async () => {
+      const file = Bun.file("./.claude-design/slide-previews/presentation.html");
+      return new Response(file, { headers: { "Content-Type": "text/html" } });
+    },
+
     // Serve index.html for all unmatched routes.
     "/*": index,
 

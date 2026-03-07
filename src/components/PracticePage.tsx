@@ -93,6 +93,7 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
   const [processingStep, setProcessingStep] = useState<ProcessingStep>("transcribing");
   const [completedSteps, setCompletedSteps] = useState<ProcessingStep[]>([]);
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
+  const [evaluateError, setEvaluateError] = useState<string | null>(null);
   const { isRecording, startRecording, stopRecording, error: micError } = useAudioRecorder({
     onChunk: uploadChunk,
     chunkInterval: 3000,
@@ -195,6 +196,7 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
     setProcessingStep("transcribing");
     setCompletedSteps([]);
     setTranscribeError(null);
+    setEvaluateError(null);
 
     try {
       // Stop recording — waits for pending chunk uploads to settle
@@ -203,7 +205,7 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
         const result = await stopRecording();
         audioBlob = result.blob;
       } catch {
-        // If stop fails we have no audio — fall through to mock
+        // If stop fails we have no audio — will show error state
       }
 
       let transcript: string;
@@ -216,14 +218,15 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
           transcriptionResult = await pollJob<TranscriptionResult>(jobId);
           transcript = transcriptionResult.transcript;
         } catch (err) {
-          console.error("Transcription failed, using mock:", err);
+          console.error("Transcription failed:", err);
           setTranscribeError(
             err instanceof Error ? err.message : "Transcription failed",
           );
-          transcript = mockFeedbackData.transcript;
+          transcript = "";
         }
       } else {
-        transcript = mockFeedbackData.transcript;
+        setTranscribeError("No audio recorded");
+        transcript = "";
       }
 
       // Step 2: Reviewing transcription (brief transitional step)
@@ -234,10 +237,10 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
       setCompletedSteps(["transcribing", "reviewing"]);
       setProcessingStep("analyzing");
 
-      let data: FeedbackData;
+      let data: FeedbackData | null;
       const prompt = currentPromptRef.current;
 
-      if (prompt) {
+      if (prompt && transcript) {
         try {
           const evalJobId = await startEvaluation(
             transcript, prompt.text, settings.prepTime, settings.speakingTime,
@@ -245,47 +248,50 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
           data = await pollJob<FeedbackData>(evalJobId);
           data.transcription = transcriptionResult;
         } catch (err) {
-          console.error("Evaluation failed, falling back to mock:", err);
-          data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+          console.error("Evaluation failed:", err);
+          setEvaluateError(err instanceof Error ? err.message : "Evaluation failed");
+          data = null;
         }
       } else {
-        data = { ...mockFeedbackData, transcript, transcription: transcriptionResult };
+        // No transcript or no prompt — skip evaluation
+        data = null;
       }
 
       setCompletedSteps(["transcribing", "reviewing", "analyzing"]);
-      setFeedbackData(data);
+      if (data) {
+        setFeedbackData(data);
 
-      // Save session
-      if (prompt) {
-        const session: SpeechSession = {
-          id: crypto.randomUUID(),
-          date: new Date().toISOString(),
-          prompt: prompt.text,
-          promptCategory: prompt.category,
-          feedbackData: data,
-        };
-        saveSession(session);
+        // Save session
+        if (prompt) {
+          const session: SpeechSession = {
+            id: crypto.randomUUID(),
+            date: new Date().toISOString(),
+            prompt: prompt.text,
+            promptCategory: prompt.category,
+            feedbackData: data,
+          };
+          saveSession(session);
 
-        // Save to Supabase (non-blocking)
-        fetch("/api/dialogues", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt_text: prompt.text,
-            prompt_category: prompt.category,
-            prep_time: settings.prepTime,
-            speaking_time: settings.speakingTime,
-            actual_duration: transcriptionResult?.duration ?? null,
-            transcript: transcriptionResult ?? null,
-            feedback: data.feedback,
-            settings: { prepTime: settings.prepTime, speakingTime: settings.speakingTime },
-          }),
-        }).catch((err) => console.error("Supabase save failed:", err));
+          // Save to Supabase (non-blocking)
+          fetch("/api/dialogues", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt_text: prompt.text,
+              prompt_category: prompt.category,
+              prep_time: settings.prepTime,
+              speaking_time: settings.speakingTime,
+              actual_duration: transcriptionResult?.duration ?? null,
+              transcript: transcriptionResult ?? null,
+              feedback: data.feedback,
+              settings: { prepTime: settings.prepTime, speakingTime: settings.speakingTime },
+            }),
+          }).catch((err) => console.error("Supabase save failed:", err));
+        }
       }
     } catch (err) {
-      // Catch-all: if anything unexpected throws, still show results with mock
       console.error("Unexpected error in handleSpeakingComplete:", err);
-      setFeedbackData(mockFeedbackData);
+      setEvaluateError(err instanceof Error ? err.message : "Something went wrong");
     }
 
     setPhase("results");
@@ -324,6 +330,7 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
     setProcessingStep("transcribing");
     setCompletedSteps([]);
     setTranscribeError(null);
+    setEvaluateError(null);
   }, []);
 
   // Debug: jump to any phase with mock data
@@ -552,18 +559,33 @@ export function PracticePage({ settings, setSettings, isGuest }: PracticePagePro
         <ProcessingScreen currentStep={processingStep} completedSteps={completedSteps} />
       )}
 
-      {/* Results */}
+      {/* Results — no phase-in wrapper: ResultsPanel uses position:fixed which breaks under CSS transforms */}
       {phase === "results" && feedbackData && (
-        <div className="phase-in w-full">
-          {transcribeError && (
-            <div className="w-full border border-warning p-3 mb-4">
-              <span className="section-label mb-0">TRANSCRIPTION NOTE</span>
-              <p className="text-sm text-muted-foreground mt-1">
-                Live transcription failed ({transcribeError}). Showing mock transcript for demo.
-              </p>
-            </div>
-          )}
-          <ResultsPanel data={feedbackData} prompt={currentPrompt?.text} onPracticeAgain={isGuest ? undefined : handleStart} onDone={isGuest ? undefined : handleReset} isGuest={isGuest} />
+        <ResultsPanel data={feedbackData} prompt={currentPrompt?.text} onPracticeAgain={isGuest ? undefined : handleStart} onDone={isGuest ? undefined : handleReset} isGuest={isGuest} />
+      )}
+
+      {/* Error state — transcription or evaluation failed */}
+      {phase === "results" && !feedbackData && (
+        <div className="flex flex-col items-center gap-6 py-16 w-full">
+          <div className="w-2 h-2 bg-[#E8302A]" />
+          <h2 className="text-xl font-semibold text-center">
+            Sorry, there was an error with the analysis.
+          </h2>
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            {transcribeError
+              ? `Transcription failed: ${transcribeError}`
+              : evaluateError
+                ? `Evaluation failed: ${evaluateError}`
+                : "Something went wrong. Please try again."}
+          </p>
+          <Button
+            variant="cta"
+            size="lg"
+            onClick={handleReset}
+            className="mt-4"
+          >
+            Try Again
+          </Button>
         </div>
       )}
 
