@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extemp — Pitch Deck</title>
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Satoshi', sans-serif;
+            background: #fafafa;
+            color: #111111;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ── Slide container ── */
+        .deck {
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .slide-inner {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* ── Common elements ── */
+        .badge {
+            display: inline-block;
+            font-family: monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            border: 1px solid #111;
+            padding: 0.35rem 0.75rem;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-family: 'Clash Display', sans-serif;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 600;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            color: #111111;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-family: 'Clash Display', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            color: #111111;
+            margin-bottom: 1.5rem;
+        }
+
+        .red-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #DC2626;
+            vertical-align: middle;
+            margin-left: 2px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .red { color: #DC2626; }
+
+        .tagline {
+            font-size: 1.15rem;
+            color: #333;
+            font-weight: 400;
+            line-height: 1.7;
+            max-width: 520px;
+        }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: #e5e5e5;
+            margin: 2.5rem 0;
+        }
+
+        .mono-label {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #999;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .cta {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: #DC2626;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Slide 1: Problem / Hook ── */
+        .problem-list {
+            list-style: none;
+            margin-top: 2rem;
+        }
+
+        .problem-list li {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 1.6;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            gap: 1rem;
+            align-items: baseline;
+        }
+
+        .problem-list li:last-child { border-bottom: none; }
+
+        .problem-num {
+            font-family: 'Clash Display', sans-serif;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #DC2626;
+            min-width: 2rem;
+        }
+
+        /* ── Slide 3: Beyond Extemp ── */
+        .prompt-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .prompt-tile {
+            position: absolute;
+            font-family: monospace;
+            font-size: 0.6rem;
+            line-height: 1.5;
+            color: #111;
+            opacity: 0.63;
+            border: 1px solid rgba(0,0,0,0.06);
+            padding: 0.5rem 0.75rem;
+            max-width: 220px;
+            white-space: normal;
+        }
+
+        .slide.active .prompt-tile {
+            animation: tileFade 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes tileFade {
+            from { opacity: 0; }
+            to { opacity: 0.63; }
+        }
+
+        .prompt-tile:nth-child(odd) { animation-delay: 0.3s !important; }
+        .prompt-tile:nth-child(even) { animation-delay: 0.6s !important; }
+
+        /* ── Slide 4: How It Works ── */
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-top: 2.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .flow-step {
+            text-align: center;
+            flex: 0 0 auto;
+        }
+
+        .flow-icon {
+            width: 72px;
+            height: 72px;
+            border: 2px solid #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            font-size: 1.5rem;
+        }
+
+        .flow-icon.active-step {
+            background: #DC2626;
+            border-color: #DC2626;
+            color: white;
+        }
+
+        .flow-label {
+            font-family: monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #333;
+        }
+
+        .flow-time {
+            font-family: 'Clash Display', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #111;
+            margin-top: 0.25rem;
+        }
+
+        .flow-arrow {
+            font-size: 1.25rem;
+            color: #ccc;
+            padding: 0 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Slide 4: Demo ── */
+        .demo-box {
+            border: 2px solid #111;
+            padding: 3rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .demo-box .timer {
+            font-family: 'Clash Display', sans-serif;
+            font-size: 4rem;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-box p {
+            font-family: monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #999;
+        }
+
+        /* ── Slide 5: Architecture ── */
+        .arch-diagram {
+            margin-top: 2rem;
+        }
+
+        .arch-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .arch-node {
+            border: 2px solid #111;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 140px;
+            background: #fff;
+        }
+
+        .arch-node.highlight {
+            border-color: #DC2626;
+            background: #fef2f2;
+        }
+
+        .arch-node h4 {
+            font-family: 'Clash Display', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .arch-node span {
+            font-family: monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+        }
+
+        .arch-arrow {
+            font-size: 1.25rem;
+            color: #ccc;
+            padding: 0 1rem;
+        }
+
+        .arch-side {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .arch-side-item {
+            text-align: center;
+        }
+
+        .arch-side-item h4 {
+            font-family: 'Clash Display', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .arch-side-item span {
+            font-family: monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+        }
+
+        /* ── Slide 2: Solution features ── */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            border: 1px solid #e5e5e5;
+            padding: 1.25rem;
+        }
+
+        .feature-card h3 {
+            font-family: 'Clash Display', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .feature-card p {
+            font-size: 0.85rem;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* ── Navigation ── */
+        .nav {
+            position: fixed;
+            bottom: 2rem;
+            right: 4rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .nav-counter {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #999;
+            letter-spacing: 0.1em;
+        }
+
+        .nav button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #666;
+            transition: border-color 0.2s;
+        }
+
+        .nav button:hover {
+            border-color: #111;
+            color: #111;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: #DC2626;
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+        }
+
+        .footer-label {
+            position: fixed;
+            bottom: 2rem;
+            left: 4rem;
+            font-family: monospace;
+            font-size: 0.6rem;
+            color: #ccc;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        /* ── Animations ── */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .slide.active .animate-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-up {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .delay-1 { animation-delay: 0.1s !important; }
+        .delay-2 { animation-delay: 0.2s !important; }
+        .delay-3 { animation-delay: 0.35s !important; }
+        .delay-4 { animation-delay: 0.5s !important; }
+        .delay-5 { animation-delay: 0.65s !important; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="deck">
+
+        <!-- ════ SLIDE 1: Problem / Hook ════ -->
+        <div class="slide active" data-slide="0">
+            <div class="slide-inner">
+                <div class="badge animate-up delay-1">The Problem</div>
+                <h2 class="animate-up delay-2">Impromptu speaking<br>is a <span class="red">trainable skill</span><br>with no good training tool.</h2>
+                <ul class="problem-list animate-up delay-3">
+                    <li>
+                        <span class="problem-num">1</span>
+                        <span>Students practice alone with no structured feedback on what went wrong or how to improve.</span>
+                    </li>
+                    <li>
+                        <span class="problem-num">2</span>
+                        <span>Coaches can't give real-time, per-speech analysis at scale. Feedback is delayed and generic.</span>
+                    </li>
+                    <li>
+                        <span class="problem-num">3</span>
+                        <span>Existing tools grade fluency but ignore the frameworks and structures that make speakers great.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 2: Solution / Reveal ════ -->
+        <div class="slide" data-slide="1">
+            <div class="slide-inner">
+                <div class="badge animate-up delay-1">The Solution</div>
+                <h1 class="animate-up delay-2">Extemp<span class="red-dot"></span></h1>
+                <p class="tagline animate-up delay-3">AI coaching that understands structure, not just fluency. Practice impromptu speaking and get framework-aware feedback in seconds.</p>
+                <div class="divider animate-up delay-4"></div>
+                <div class="feature-grid animate-up delay-5">
+                    <div class="feature-card">
+                        <h3>Framework Detection</h3>
+                        <p>Identifies your organizational structure and scores how well you executed it.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Instant Feedback</h3>
+                        <p>AI coaching in under 20 seconds. Specific, actionable, tied to your words.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Real Prompts</h3>
+                        <p>Topics drawn from actual extemp rounds across domestic and international affairs.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Progress Tracking</h3>
+                        <p>Every speech scored across dimensions. See patterns over time, not isolated grades.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 3: Beyond Extemp ════ -->
+        <div class="slide" data-slide="2">
+            <div class="prompt-bg">
+                <div class="prompt-tile" style="top: 4%; left: 2%; transform: rotate(-2deg);">Tell me about yourself.</div>
+                <div class="prompt-tile" style="top: 8%; right: 5%; transform: rotate(1.5deg);">Should creative works generated by AI be eligible for copyright protection?</div>
+                <div class="prompt-tile" style="top: 28%; left: 1%; transform: rotate(1deg);">Why should we hire you?</div>
+                <div class="prompt-tile" style="top: 55%; left: 3%; transform: rotate(-1.5deg);">If humans could no longer lie, how would society change?</div>
+                <div class="prompt-tile" style="top: 72%; left: 6%; transform: rotate(2deg);">Describe a time you failed and what you learned.</div>
+                <div class="prompt-tile" style="top: 85%; left: 2%; transform: rotate(-1deg);">Is the pursuit of work-life balance a realistic goal or a harmful myth?</div>
+                <div class="prompt-tile" style="top: 15%; right: 2%; transform: rotate(-1deg);">How do you handle conflict with a coworker?</div>
+                <div class="prompt-tile" style="top: 42%; right: 1%; transform: rotate(2.5deg);">Does having more choices make people happier?</div>
+                <div class="prompt-tile" style="top: 62%; right: 4%; transform: rotate(-2deg);">What is your greatest weakness?</div>
+                <div class="prompt-tile" style="top: 80%; right: 2%; transform: rotate(1deg);">How do you set and communicate a compelling vision?</div>
+                <div class="prompt-tile" style="top: 3%; left: 38%; transform: rotate(0.5deg);">How is the rise of AI-generated content reshaping trust in media?</div>
+                <div class="prompt-tile" style="bottom: 5%; left: 35%; transform: rotate(-1.5deg);">If you were designing a new city from scratch, what would be your top three priorities?</div>
+                <div class="prompt-tile" style="top: 92%; right: 30%; transform: rotate(1deg);">Should we judge historical figures by today's moral standards?</div>
+                <div class="prompt-tile" style="top: 20%; left: 60%; transform: rotate(-0.5deg);">How do you build psychological safety on your team?</div>
+            </div>
+            <div class="slide-inner" style="position: relative; z-index: 1;">
+                <div class="badge animate-up delay-1">Beyond Extemp</div>
+                <h2 class="animate-up delay-2">Speaking frameworks<br>show up <span class="red">everywhere</span>.</h2>
+                <p class="tagline animate-up delay-3" style="color: #333;">How many of us have practiced "tell me about yourself" in front of a mirror? Structured speaking isn't just for debate rounds.</p>
+                <div class="divider animate-up delay-4"></div>
+                <p class="tagline animate-up delay-5" style="font-size: 1.05rem; color: #333;">Extemp supports <strong>interview prep</strong>, opinion questions, hypotheticals, philosophical prompts, and more &mdash; all with the same framework-aware AI coaching.</p>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 4: How It Works ════ -->
+        <div class="slide" data-slide="3">
+            <div class="slide-inner">
+                <div class="badge animate-up delay-1">How It Works</div>
+                <h2 class="animate-up delay-2">Choose a category, speak,<br>and get feedback.<br>All under <span class="red">five minutes</span>.</h2>
+                <div class="flow animate-up delay-3">
+                    <div class="flow-step">
+                        <div class="flow-icon">?</div>
+                        <div class="flow-label">Prompt</div>
+                        <div class="flow-time">Pick a topic</div>
+                    </div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-step">
+                        <div class="flow-icon">30</div>
+                        <div class="flow-label">Prep</div>
+                        <div class="flow-time">30 seconds</div>
+                    </div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-step">
+                        <div class="flow-icon active-step">&#9679;</div>
+                        <div class="flow-label">Speak</div>
+                        <div class="flow-time">2 minutes</div>
+                    </div>
+                    <div class="flow-arrow">&rarr;</div>
+                    <div class="flow-step">
+                        <div class="flow-icon">&#10003;</div>
+                        <div class="flow-label">Feedback</div>
+                        <div class="flow-time">&lt; 20 seconds</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 5: Live Demo ════ -->
+        <div class="slide" data-slide="4">
+            <div class="slide-inner" style="text-align: center;">
+                <div class="badge animate-up delay-1">Live Demo</div>
+                <h2 class="animate-up delay-2">Let's try it<span class="red">.</span></h2>
+                <div class="demo-box animate-up delay-3">
+                    <div class="timer">3:00</div>
+                    <p>Live walkthrough</p>
+                </div>
+                <p class="tagline animate-up delay-4" style="margin: 2rem auto 0; text-align: center; max-width: 400px;">Prompt &rarr; Prep &rarr; Speak &rarr; Feedback<br>End-to-end in real time.</p>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 6: Architecture ════ -->
+        <div class="slide" data-slide="5">
+            <div class="slide-inner">
+                <div class="badge animate-up delay-1">Architecture</div>
+                <h2 class="animate-up delay-2">How it's built<span class="red">.</span></h2>
+                <div class="arch-diagram animate-up delay-3">
+                    <div class="arch-row">
+                        <div class="arch-node">
+                            <h4>Voice Input</h4>
+                            <span>Browser MediaRecorder</span>
+                        </div>
+                        <div class="arch-arrow">&rarr;</div>
+                        <div class="arch-node highlight">
+                            <h4>Groq Whisper</h4>
+                            <span>Speech-to-Text</span>
+                        </div>
+                        <div class="arch-arrow">&rarr;</div>
+                        <div class="arch-node highlight">
+                            <h4>OpenRouter</h4>
+                            <span>LLM Analysis</span>
+                        </div>
+                        <div class="arch-arrow">&rarr;</div>
+                        <div class="arch-node">
+                            <h4>Feedback</h4>
+                            <span>Structured Coaching</span>
+                        </div>
+                    </div>
+                    <div class="arch-side">
+                        <div class="arch-side-item">
+                            <h4>Bun + React</h4>
+                            <span>Frontend &amp; Server</span>
+                        </div>
+                        <div class="arch-side-item">
+                            <h4>Supabase</h4>
+                            <span>Auth &amp; Database</span>
+                        </div>
+                        <div class="arch-side-item">
+                            <h4>Tailwind CSS</h4>
+                            <span>Styling</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════ SLIDE 7: Thank You ════ -->
+        <div class="slide" data-slide="6">
+            <div class="slide-inner">
+                <div class="badge animate-up delay-1">Thank You</div>
+                <h1 class="animate-up delay-2">Extemp<span class="red-dot"></span></h1>
+                <p class="tagline animate-up delay-3">Think fast. Speak clearly.</p>
+                <div class="divider animate-up delay-4"></div>
+                <p class="mono-label animate-up delay-5">Josh Upadhyay / 2026</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+        <span class="nav-counter" id="counter">1 / 7</span>
+        <button onclick="prev()" aria-label="Previous slide">&larr;</button>
+        <button onclick="next()" aria-label="Next slide">&rarr;</button>
+    </div>
+    <div class="footer-label">Extemp / Pitch Deck</div>
+
+    <script>
+        let current = 0;
+        const slides = document.querySelectorAll('.slide');
+        const total = slides.length;
+        const counter = document.getElementById('counter');
+        const progress = document.getElementById('progress');
+
+        function goTo(n) {
+            slides[current].classList.remove('active');
+            slides[current].querySelectorAll('.animate-up').forEach(el => {
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.style.animation = '';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+            });
+
+            current = Math.max(0, Math.min(n, total - 1));
+            slides[current].classList.add('active');
+
+            counter.textContent = (current + 1) + ' / ' + total;
+            progress.style.width = ((current + 1) / total * 100) + '%';
+        }
+
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+        });
+
+        progress.style.width = (1 / total * 100) + '%';
+    </script>
+</body>
+</html>
