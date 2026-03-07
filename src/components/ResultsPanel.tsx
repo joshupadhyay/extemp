@@ -183,38 +183,37 @@ export function ResultsPanel({ data, prompt, onPracticeAgain, onDone, onBack }: 
           </div>
         </div>
 
-        {/* Header */}
-        <div className="pt-8 lg:pt-12 px-6 lg:px-12 pb-4 bg-white z-10">
-          <div className="font-mono text-xs text-neutral-400 uppercase tracking-widest mb-8">
-            Practice / Report 01
-          </div>
-
-          <div className="border-b border-neutral-100 pb-8">
-            {prompt && (
-              <p className="text-base lg:text-lg font-medium text-neutral-900 leading-snug mb-3">
-                &ldquo;{prompt}&rdquo;
-              </p>
-            )}
-            <div className="flex items-center gap-4 mb-1">
-              <span className="font-mono text-2xl font-bold text-neutral-900 tabular-nums">
-                {score}<span className="text-base text-neutral-400 font-normal">/100</span>
-              </span>
-              <span className="text-sm font-medium text-neutral-500">
-                {getScoreLabel(score)}
-              </span>
-              <Link
-                to={ROUTES.methodology}
-                className="ml-auto font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
-              >
-                Methodology
-              </Link>
-            </div>
-            <p className="text-neutral-500 text-sm">{dateStr}</p>
-          </div>
-        </div>
-
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 lg:px-12 pb-12">
+          {/* Header */}
+          <div className="pt-8 lg:pt-12 pb-4">
+            <div className="font-mono text-xs text-neutral-400 uppercase tracking-widest mb-8">
+              Practice / Report 01
+            </div>
+
+            <div className="border-b border-neutral-100 pb-8">
+              {prompt && (
+                <p className="text-base lg:text-lg font-medium text-neutral-900 leading-snug mb-3">
+                  &ldquo;{prompt}&rdquo;
+                </p>
+              )}
+              <div className="flex items-center gap-4 mb-1">
+                <span className="font-mono text-2xl font-bold text-neutral-900 tabular-nums">
+                  {score}<span className="text-base text-neutral-400 font-normal">/100</span>
+                </span>
+                <span className="text-sm font-medium text-neutral-500">
+                  {getScoreLabel(score)}
+                </span>
+                <Link
+                  to={ROUTES.methodology}
+                  className="ml-auto font-mono text-[10px] uppercase tracking-wider text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors"
+                >
+                  Methodology
+                </Link>
+              </div>
+              <p className="text-neutral-500 text-sm">{dateStr}</p>
+            </div>
+          </div>
           {/* Coach Feedback */}
           <div className="py-8">
             <div className="flex items-center gap-2 mb-6">
