@@ -154,4 +154,12 @@ if (existsSync(assetsDir)) {
   console.log("📦 Copied assets/ into output directory");
 }
 
+// Copy presentation deck as standalone page
+const presentationSrc = path.join(process.cwd(), ".claude-design/slide-previews/presentation.html");
+if (existsSync(presentationSrc)) {
+  const { copyFileSync } = await import("fs");
+  copyFileSync(presentationSrc, path.join(outdir, "demo.html"));
+  console.log("📊 Copied presentation deck to demo.html");
+}
+
 console.log(`\n✅ Build completed in ${buildTime}ms\n`);
