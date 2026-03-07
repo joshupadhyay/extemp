@@ -33,7 +33,62 @@ export function App() {
     return <LoginPage />;
   }
 
+  const isGuest = !!(session.user as any).isAnonymous;
+
+  if (isGuest) {
+    return <GuestApp />;
+  }
+
   return <AuthenticatedApp user={session.user} />;
+}
+
+function GuestApp() {
+  const [settings, setSettings] = useState<Settings>({
+    prepTime: 60,
+    speakingTime: 120,
+  });
+
+  return (
+    <Routes>
+      <Route
+        path={ROUTES.practice}
+        element={
+          <GuestPageLayout>
+            <PracticePage settings={settings} setSettings={setSettings} isGuest />
+          </GuestPageLayout>
+        }
+      />
+      <Route path={ROUTES.methodology} element={<MethodologyPage />} />
+      <Route path="*" element={<Navigate to={ROUTES.practice} replace />} />
+    </Routes>
+  );
+}
+
+function GuestPageLayout({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <nav className="flex items-center gap-3 px-[var(--pad)] py-4 border-b border-hairline">
+        <span className="font-mono text-xs uppercase tracking-[0.1em] text-foreground">
+          Extemp
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            signOut({ fetchOptions: { onSuccess: () => navigate("/") } });
+          }}
+          className="ml-auto font-mono text-xs uppercase tracking-[0.1em]"
+        >
+          Sign Up
+        </Button>
+      </nav>
+      <div className="flex-1">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function AuthenticatedApp({ user }: { user: { name: string; image?: string | null; createdAt?: Date } }) {

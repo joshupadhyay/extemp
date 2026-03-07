@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { anonymous } from "better-auth/plugins";
 import { pool } from "./db.js";
 
 export const auth = betterAuth({
@@ -12,11 +13,18 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    },
   },
+
+  plugins: [
+    anonymous({
+      onLinkAccount: async ({ anonymousUser, newUser }) => {
+        await pool.query(
+          "UPDATE dialogue_chain SET user_id = $1 WHERE user_id = $2",
+          [newUser.user.id, anonymousUser.user.id],
+        );
+      },
+    }),
+  ],
 });
 
 /**
